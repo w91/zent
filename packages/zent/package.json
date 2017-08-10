@@ -1,6 +1,6 @@
 {
   "name": "zent",
-  "version": "3.4.0",
+  "version": "3.5.0-beta8",
   "description": "一套前端设计语言和基于React的实现",
   "bugs": "https://github.com/youzan/zent/issues",
   "repository": {
@@ -13,13 +13,15 @@
     "build": "./scripts/build.sh",
     "prepublish": "yarn build"
   },
+  "typings": "typings/index.d.ts",
   "author": "Youzan FE",
   "license": "MIT",
   "files": [
     "src/",
     "assets/",
     "lib/",
-    "css/"
+    "css/",
+    "typings/"
   ],
   "dependencies": {
     "babel-runtime": "^6.23.0",
@@ -28,8 +30,13 @@
     "fecha": "2.3.x",
     "lodash": "4.17.x",
     "prop-types": "15.5.x",
-    "zenticons": "^1.0.2",
-    "tinycolor2": "^1.4.1"
+    "raf": "^3.3.2",
+    "react-dnd": "^2.4.0",
+    "react-dnd-html5-backend": "^2.4.1",
+    "tinycolor2": "^1.4.1",
+    "zan-utils": "^1.0.9",
+    "uuid": "^3.1.0",
+    "zenticons": "^1.0.3"
   },
   "devDependencies": {
     "autoprefixer": "^6.7.7",

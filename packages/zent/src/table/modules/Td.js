@@ -6,30 +6,19 @@ import cx from 'classnames';
 import helper from '../helper';
 
 export default class Td extends (PureComponent || Component) {
-  renderText(name, data) {
-    return data[name];
-  }
-
   renderContent() {
     const { column, data, pos } = this.props;
-    const { name, bodyRender } = column;
+    const { name, bodyRender = data[name] } = column;
     const isReactComponent = helper.isReactComponent(bodyRender);
 
-    if (typeof bodyRender !== 'undefined') {
-      if (typeof bodyRender === 'function') {
-        if (isReactComponent) {
-          let BodyRender = bodyRender;
+    if (typeof bodyRender === 'function') {
+      const BodyRender = bodyRender;
 
-          return <BodyRender data={data} name={name} pos={pos} />;
-        }
-        return typeof bodyRender(data, pos) !== 'undefined'
-          ? bodyRender(data, pos)
-          : '';
-      }
-      return bodyRender;
+      return isReactComponent
+        ? <BodyRender data={data} name={name} pos={pos} />
+        : bodyRender(data, pos, name);
     }
-
-    return this.renderText(name, data);
+    return bodyRender;
   }
 
   onSelect = e => {
@@ -48,7 +37,7 @@ export default class Td extends (PureComponent || Component) {
             className="select-check"
             checked={
               canSelect &&
-                selection.selectedRowKeys.indexOf(data[rowKey]) !== -1
+              selection.selectedRowKeys.indexOf(data[rowKey]) !== -1
             }
             disabled={!canSelect}
             onChange={this.onSelect}
@@ -90,7 +79,9 @@ export default class Td extends (PureComponent || Component) {
       };
     }
 
-    className += ` cell--${helper.getAlignClass(textAlign)}`;
+    if (helper.getAlignClass(textAlign) !== '') {
+      className += ` cell--${helper.getAlignClass(textAlign)}`;
+    }
 
     return (
       <div className={className} style={styleObj}>

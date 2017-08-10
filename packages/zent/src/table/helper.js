@@ -1,3 +1,5 @@
+import intersection from 'lodash/intersection';
+
 const helper = {
   getCalculatedWidth(width) {
     let res;
@@ -56,6 +58,45 @@ const helper = {
     }
 
     return res;
+  },
+
+  /**
+   * 是否选中全部
+   * @param {array} rowKeys
+   * @param {array} subRowKeys
+   * @return {boolean} isSelectAll
+   */
+  isSelectAll(rowKeys, subRowKeys) {
+    return intersection(rowKeys, subRowKeys).length === subRowKeys.length;
+  },
+
+  /**
+   * 是否选中了部分
+   * @param {array} rowKeys
+   * @param {array} subRowKeys
+   * @return {boolean} 是否选中了部分
+   */
+  isSelectPart(rowKeys, subRowKeys) {
+    return intersection(rowKeys, subRowKeys).length > 0;
+  },
+
+  /**
+   * 切换是否监听事件
+   */
+  toggleEventListener(currentProps, nextProps) {
+    let toggleEventListener;
+    if (
+      nextProps.batchComponentsAutoFixed !==
+      currentProps.batchComponentsAutoFixed
+    ) {
+      if (nextProps.batchComponentsAutoFixed) {
+        toggleEventListener = 'addEventListener';
+      } else {
+        toggleEventListener = 'removeEventListener';
+      }
+    }
+
+    return toggleEventListener;
   }
 };
 

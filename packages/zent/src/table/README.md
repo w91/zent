@@ -44,7 +44,7 @@ const columns = [{
   title: '库存',
   name: 'stock_num',
   width: '100px',
-  textAlign: 'center',
+	isMoney: true,
   isMoney: true
 }, {
   width: '3em',
@@ -55,6 +55,7 @@ const columns = [{
 ReactDOM.render(
     <Table
       columns={columns}
+			pageInfo={null}
       datasets={datasets}
       rowKey="item_id"
     />
@@ -339,6 +340,23 @@ const datasets = [{
   stock_num: 159,
   sold_num: 0,
 }];
+const datasets2 = [{
+  item_id: '4217',
+  bro_uvpv: '0/0',
+  stock_num: '60',
+  sold_num: 0,
+}, {
+  item_id: '50',
+  bro_uvpv: '0/0',
+  stock_num: 59,
+  sold_num: 0,
+}, {
+  item_id: '13123',
+  bro_uvpv: '0/0',
+  stock_num: 159,
+  sold_num: 0,
+}];
+
 const columns = [{
   title: '商品',
   width: 50,
@@ -365,9 +383,12 @@ class Selection extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      limit: 10,
-      current: 0,
-      total: 101,
+			page: {
+				pageSize: 3,
+				current: 0,
+				totalItem: 6,
+			},
+			datasets: datasets,
       selectedRowKeys: [],
     };
   }
@@ -376,7 +397,6 @@ class Selection extends React.Component {
     this.setState({
       selectedRowKeys
     });
-    console.log(currentRow)
     alert(`你选中了：${selectedRowKeys}`);
   }
 
@@ -386,17 +406,31 @@ class Selection extends React.Component {
     };
   }
 
+	onChange(conf) {
+		this.setState({
+			page: {
+				pageSize: 3,
+				current: conf.current,
+				totalItem: 6
+			},
+			datasets: conf.current === 1 ? datasets : datasets2
+		})
+	}
+
   render() {
     let self = this;
 
     return (
       <Table
         columns={columns}
-        datasets={datasets}
+        datasets={this.state.datasets}
         rowKey="item_id"
         getRowConf={this.getRowConf}
+				pageInfo={this.state.page}
+				onChange={(conf) => { this.onChange(conf); }}
         selection={{
           selectedRowKeys: this.state.selectedRowKeys,
+					needCrossPage: true,
           onSelect: (selectedRowkeys, selectedRows, currentRow) => {
             self.onSelect(selectedRowkeys, selectedRows, currentRow);
           }
@@ -735,6 +769,7 @@ ReactDOM.render(
 | autoScroll | 是否点击分页自动滚到table顶部                          | boll          | `false`     |         | 否    |
 | className  | 自定义额外类名                                    | string        | `''`        |         | 否    |
 | prefix     | 自定义前缀                                      | string        | `'zent'`    |         | 否    |
+| pageInfo   | table对应的分页信息                              | object        | null    |         | 否    |
 
 #### getRowConf的特别声明：
 ```jsx
@@ -763,7 +798,7 @@ onChange会抛出一个对象，这个对象包含分页变化和排序的的参
 {
 	sortBy, // {String} 表示基于什么key进行排序
 	sortType, // {String} ['asc', 'desc'] 排序的方式
-	current, // {Number} 表示当前第几行
+	current, // {Number} 表示当前第几页
 }
 ```
 
@@ -776,7 +811,7 @@ onChange会抛出一个对象，这个对象包含分页变化和排序的的参
 | width      | 每一列在一行的宽度, 相对值和固定值 (如: 20% 或 100px) | string               |         | 否    |
 | isMoney    | 表示是否是金额                             | bool                 | `false` | 否    |
 | needSort   | 这一列是否支持排序, 这一列必须设置了key, 才能正常使用排序功能  | bool                 | `false` | 否    |
-| bodyRender | 这一列对应用来渲染的组件                        | `React Element`/func |         | 否    |
+| bodyRender | 这一列对应用来渲染的组件                        | node|function |         | 否    |
 | textAlign  | 文本对齐方式                        | string |    ''     | 否    |
 
 ### selection
@@ -785,7 +820,19 @@ onChange会抛出一个对象，这个对象包含分页变化和排序的的参
 | --------------- | --------------- | ----- | ---- | ----- |
 | selectedRowKeys | 默认选中            | array |  | 否    |
 | isSingleSelection | 是否是单选            | Boolean | false | 否    |
+| needCrossPage |   是否需要跨页的时候多选            | Boolean | false | 否    |
 | onSelect(@selectedkeys, @selectedRows, @currentRow)        | 每次check的时候触发的函数 | func  |  | 否    |
+
+### pageInfo
+
+| 参数              | 说明              | 类型    |  默认值 | 是否必须 |
+| --------------- | --------------- | ----- | ---- | ----- |
+| totalItem | 总条目个数            | number | 0 | 否    |
+| pageSize | 每页个数   | number |  | 否    |
+| current | 当前页码 | number | | |
+| maxPageToShow    | 最多可显示的个数 | number  |  | 否  
+| total | 总条目个数**[deprecated]**   | number | 0 | 否    |
+| limit | 每页个数**[deprecated]**   | number |  | 否    |
 
 ### expandation
 
@@ -793,7 +840,6 @@ onChange会抛出一个对象，这个对象包含分页变化和排序的的参
 | --------------- | --------------- | ----- | ---- | ----- |
 | isExpanded | 是否展开当前行            | boolean | false | 否    |
 | expandRender        | 展开行的补充内容render | func  |  | 否  
-
 
 <style>
   .row {

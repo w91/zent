@@ -3,6 +3,7 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import omit from 'lodash/omit';
 import isFunction from 'lodash/isFunction';
+import noop from 'lodash/noop';
 import Input from 'input';
 import Icon from 'icon';
 
@@ -22,7 +23,7 @@ export default class NumberInput extends (PureComponent || Component) {
   static defaultProps = {
     prefix: 'zent',
     showStepper: false,
-    value: 0,
+    value: '',
     decimal: 0,
     disabled: false,
     onChange: () => {}
@@ -37,6 +38,7 @@ export default class NumberInput extends (PureComponent || Component) {
       max,
       decimal
     );
+    num = value === '' ? '' : num;
     this.state = {
       value: num,
       upArrow,
@@ -60,6 +62,7 @@ export default class NumberInput extends (PureComponent || Component) {
         max,
         decimal
       );
+      num = value === '' ? '' : num;
       this.setState({
         value: num,
         upArrow,
@@ -126,6 +129,7 @@ export default class NumberInput extends (PureComponent || Component) {
       max,
       decimal
     );
+    num = value === '' ? '' : num;
     this.setState({
       value: num,
       upArrow,
@@ -170,12 +174,15 @@ export default class NumberInput extends (PureComponent || Component) {
 
   onPropChange(result) {
     const props = this.props;
+    result = result === '' ? '' : parseFloat(result);
     props.onChange({
       target: {
         ...props,
         type: 'number',
         value: result
-      }
+      },
+      preventDefault: noop,
+      stopPropagation: noop
     });
   }
 
@@ -214,8 +221,8 @@ export default class NumberInput extends (PureComponent || Component) {
     let inputProps = omit(this.props, [
       // 这几个 Input 的 props 不要透传
       'type',
-      'addonBefore',
-      'addonAfter',
+      // 'addonBefore',
+      // 'addonAfter',
       'onChange',
 
       // 这些是 NumberInput 特有的 props

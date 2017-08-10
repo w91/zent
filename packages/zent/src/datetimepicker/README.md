@@ -38,8 +38,23 @@ class Demo extends Component{
     })
   }
 
+	onChangeRangeSplit = (val) => {
+		this.setState({
+			rangeValue: val
+		})
+	}
+
+	onOpen = (type) => {
+		console.log('open',type);
+	}
+
+	onClose = (type) => {
+		console.log('close', type)
+	}
+
   render(){
     const { dateValue, monthValue, rangeValue } = this.state;
+
     return (
       <div>
         <DatePicker
@@ -60,6 +75,14 @@ class Demo extends Component{
           value={rangeValue}
           onChange={this.onChangeRange}
           />
+				<br/>
+				<DateRangePicker
+					type="split"
+					value={rangeValue}
+					onChange={this.onChangeRangeSplit}
+					onOpen={this.onOpen}
+					onClose={this.onClose}
+				/>
       </div>
     )
   }
@@ -100,6 +123,12 @@ class Demo extends Component{
     })
   }
 
+	onChangeRangeSplit = (val) => {
+		this.setState({
+			rangeValue: val
+		})
+	}
+
   render() {
     const { dateValue, monthValue, rangeValue } = this.state;
     return (
@@ -124,6 +153,14 @@ class Demo extends Component{
           value={rangeValue}
           onChange={this.onChangeRange}
           />
+				<br />
+				<DateRangePicker
+				 className="zent-picker-demo"
+					type="split"
+					format="YYYY-MM-DD"
+					value={rangeValue}
+					onChange={this.onChangeRangeSplit}
+				/>
         </div>
     )
   }
@@ -158,6 +195,12 @@ class Demo extends Component{
     })
   }
 
+	onChangeRangeSplit = (val) => {
+    this.setState({
+      rangeValue: val
+    })
+  }
+
   render(){
     const { dateValue, rangeValue } = this.state;
     return (
@@ -177,6 +220,15 @@ class Demo extends Component{
           value={rangeValue}
           onChange={this.onChangeRange}
           />
+				<br />
+				<DateRangePicker
+					className="zent-picker-demo"
+					type="split"
+					showTime
+					format="YYYY-MM-DD HH:mm:ss"
+					value={rangeValue}
+					onChange={this.onChangeRangeSplit}
+				/>
       </div>
     )
   }
@@ -482,10 +534,12 @@ ReactDOM.render(
 | name 				 | input 的 name 属性            | string    |   | 否    |
 | placeholder  | 提示文案          | string  | `请选择月份`   | 否    |
 
+
 ### RangePicker
 
 | 参数           | 说明         | 类型     | 默认值            | 是否必须 |
 | ------------ | ---------- | ------ | -------------- | ---- |
+| type				 | 类型，`combine`/`split` | string | `combine` | 否 |
 | showTime     | 是否显示时间筛选 | bool   | `false` | 否    |
 | value        | 默认选择日期     | array  | `[]`           | 否    |
 | format       | 返回日期字符串格式  | string | `'YYYY-MM-DD'` | 否    |
@@ -499,10 +553,11 @@ ReactDOM.render(
 
 
 **注意：**
-
+- `type` 为了和老代码兼容，默认是 `combine`，但是交互方面现在是推荐使用 `split`的。
 - `showTime` 的时候，传入的 `min` 或 `max` 如果为字符串，必须有 time 部分，即 `2017-01-01 11:11:11` 种格式。
 - `disabledTime` 和 `DatePicker` 的类似，区别在于被调用时会传入一个 `type` 参数，值为 `start/end`，参照上面的 `disabledTime` 函数。
 - `onClick` 调用时会传入被点击的日期值和点击的类型（start/end) 作为参数，即 `onClick(val, type)`。
+
 
 ### 格式化字符表
 

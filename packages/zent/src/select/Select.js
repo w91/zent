@@ -11,28 +11,33 @@ import isArray from 'lodash/isArray';
 import noop from 'lodash/noop';
 import PropTypes from 'prop-types';
 
+import Popover from 'popover';
 import Trigger from './triggers/Index';
 import Popup from './Popup';
 import SimpleTrigger from './triggers/SimpleTrigger';
 import SelectTrigger from './triggers/SelectTrigger';
 import InputTrigger from './triggers/InputTrigger';
 import TagsTrigger from './triggers/TagsTrigger';
-import { KEY_ESC } from './constants';
+
+class PopoverClickTrigger extends Popover.Trigger.Click {
+  getTriggerProps(child) {
+    return {
+      onClick: evt => {
+        evt.preventDefault();
+        if (this.props.contentVisible) {
+          this.props.close();
+        } else if (!child.props.disabled) {
+          this.props.open();
+          this.triggerEvent(child, 'onClick', evt);
+        }
+      }
+    };
+  }
+}
 
 class Select extends (PureComponent || Component) {
   constructor(props) {
     super(props);
-
-    let data = this.uniformData(props);
-
-    /**
-     * data支持字符串数组和对象数组两种模式
-     *
-     * 字符串数组默认value为下标
-     * 对象数组需提供value和text
-     *
-     * @return {object}
-     */
 
     if (props.simple) {
       this.trigger = SimpleTrigger;
@@ -46,38 +51,45 @@ class Select extends (PureComponent || Component) {
 
     this.state = assign(
       {
-        selectedItems: []
+        selectedItems: [],
+        selectedItem: {
+          value: '',
+          text: ''
+        }
       },
       props
     );
+  }
 
+  componentWillMount() {
+    /**
+     * data支持字符串数组和对象数组两种模式
+     *
+     * 字符串数组默认value为下标
+     * 对象数组需提供value和text
+     *
+     * @return {object}
+     */
+    let data = this.uniformData(this.props);
     this.formateData(data);
-
-    this.blurHandler = this.blurHandler.bind(this);
-    this.keyupHandler = this.keyupHandler.bind(this);
-    this.triggerChangeHandler = this.triggerChangeHandler.bind(this);
-    this.triggerDeleteHandler = this.triggerDeleteHandler.bind(this);
-    this.optionChangedHandler = this.optionChangedHandler.bind(this);
-    this.popupFocusHandler = this.popupFocusHandler.bind(this);
-    this.popupBlurHandler = this.popupBlurHandler.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
     let data = this.uniformData(nextProps);
     // 重置组件data
-    let selectedItems = [];
+    // let selectedItems = [];
 
     this.formateData(data, nextProps);
-    if (isArray(nextProps.value)) {
-      this.sourceData.forEach(item => {
-        if (nextProps.value.indexOf(item.value) > -1) {
-          selectedItems.push(item);
-        }
-      });
-    }
-    this.setState({
-      selectedItems
-    });
+    // if (isArray(nextProps.value)) {
+    //   this.sourceData.forEach(item => {
+    //     if (nextProps.value.indexOf(item.value) > -1) {
+    //       selectedItems.push(item);
+    //     }
+    //   });
+    // }
+    // this.setState({
+    //   selectedItems
+    // });
   }
 
   // 统一children和data中的数据
@@ -101,18 +113,57 @@ class Select extends (PureComponent || Component) {
     return data;
   }
 
+  // 显示当前选项，支持通过value和index进行外部控制
+  getOptions(state, props, item, i) {
+    let { value, index } = props;
+    if (isArray(value) && value.indexOf(item.value) > -1) {
+      // rerender 去重
+      if (!state.sItems.find(selected => selected.value === item.value)) {
+        state.sItems.push(item);
+      }
+    } else if (isArray(value) && value.length === 0) {
+      // 多选重置
+      state.sItem = {};
+      state.sItems = [];
+    } else if (typeof value === 'object' && isEqual(value, item.value)) {
+      state.sItem = item;
+    } else if (
+      (typeof value !== 'undefined' &&
+        typeof value !== 'object' &&
+        `${item.value}` === `${value}`) ||
+      (index !== 'undefined' && `${i}` === `${index}`)
+    ) {
+      state.sItem = item;
+    } else if (!value && !index) {
+      // 单选重置
+      state.sItem = {};
+      state.sItems = [];
+    }
+    return state;
+  }
+
   // 对data进行处理，增加cid
   formateData(data, props) {
-    let selectedItems = [];
     data = data || this.sourceData;
     props = props || this.props;
     let that = this;
+    const { selectedItem, selectedItems } = this.state;
+    const {
+      value,
+      index,
+      initialIndex,
+      initialValue,
+      optionValue,
+      optionText
+    } = props;
+    const selected = { sItem: selectedItem, sItems: [] };
+
     this.sourceData = cloneDeep(data)
       .map(item => {
         let result = {};
         if (typeof item === 'object') {
-          result.value = item[props.optionValue];
-          result.text = item[props.optionText];
+          result.value = item[optionValue];
+          result.text = item[optionText];
           result = { ...item, ...result };
         } else {
           result.value = item;
@@ -120,40 +171,42 @@ class Select extends (PureComponent || Component) {
         }
         return result;
       })
-      .map((item, index) => {
-        // 显示当前选项，支持value和index
-        item.cid = `${index}`;
-        if (isArray(props.value) && props.value.indexOf(item.value) > -1) {
-          selectedItems.push(item);
-        } else if (
-          typeof props.value === 'object' &&
-          isEqual(props.value, item.value)
+      .map((item, i) => {
+        item.cid = `${i}`;
+
+        // 处理默认选项(initialIndex, initialValue)
+        if (
+          selectedItems.length === 0 &&
+          !selectedItem.cid &&
+          (initialValue !== null || initialIndex !== null)
         ) {
-          that.state.selectedItem = item;
-        } else if (
-          (typeof props.value !== 'undefined' &&
-            typeof props.value !== 'object' &&
-            `${item.value}` === `${props.value}`) ||
-          (props.index !== 'undefined' && `${index}` === `${props.index}`)
-        ) {
-          that.state.selectedItem = item;
+          that.getOptions(
+            selected,
+            { value: initialValue, index: initialIndex },
+            item,
+            i
+          );
         }
 
+        // 与受控逻辑(index, value)
+        if (value !== null || index !== null) {
+          that.getOptions(selected, { value, index }, item, i);
+        }
         return item;
       });
-    this.state.selectedItems = selectedItems;
+    this.setState({
+      selectedItem: selected.sItem,
+      selectedItems: selected.sItems
+    });
     return this.sourceData;
   }
 
   // 接收trigger改变后的数据，将数据传给popup
-  triggerChangeHandler(data) {
-    if (data.open) {
-      this.props.onOpen();
-    }
+  triggerChangeHandler = data => {
     this.setState(data);
-  }
+  };
 
-  triggerDeleteHandler(data) {
+  triggerDeleteHandler = data => {
     let { selectedItems } = this.state;
     selectedItems = selectedItems.filter(item => item.cid !== data.cid);
     this.setState(
@@ -164,10 +217,10 @@ class Select extends (PureComponent || Component) {
         this.props.onDelete(data);
       }
     );
-  }
+  };
 
   // 将被选中的option的数据传给trigger
-  optionChangedHandler(ev, selectedItem) {
+  optionChangedHandler = (ev, selectedItem) => {
     let result = {};
     ev = ev || {
       preventDefault: noop,
@@ -194,64 +247,48 @@ class Select extends (PureComponent || Component) {
         selectedItems.push(selectedItem);
       }
     }
-    onChange(
+    this.setState(
       {
-        target: {
-          ...this.props,
-          type: tags ? 'select-multiple' : 'select-one',
-          value: selectedItem.value
-        },
-
-        preventDefault() {
-          ev.preventDefault();
-        },
-
-        stopPropagation() {
-          ev.stopPropagation();
-        }
+        keyword: null,
+        selectedItems,
+        selectedItem
       },
-      data
+      () => {
+        onChange(
+          {
+            target: {
+              ...this.props,
+              type: tags ? 'select-multiple' : 'select-one',
+              value: selectedItem.value
+            },
+
+            preventDefault() {
+              ev.preventDefault();
+            },
+
+            stopPropagation() {
+              ev.stopPropagation();
+            }
+          },
+          data
+        );
+      }
     );
-    this.setState({
-      keyword: null,
-      selectedItems,
-      selectedItem,
-      open: this.focus
-    });
-  }
+  };
 
-  popupFocusHandler() {
-    this.focus = this.state.open;
-  }
-
-  popupBlurHandler() {
-    this.focus = false;
-  }
-
-  // 焦点丢失处理
-  blurHandler() {
-    let that = this;
-    setTimeout(() => {
-      that.setState({
-        open: this.focus
-      });
-    }, 0);
-  }
-
-  keyupHandler(ev) {
-    let code = ev.keyCode;
-    if (!this.state.open) return false;
-    if (code === KEY_ESC) {
-      this.setState({
-        open: false
-      });
+  handlePopoverVisibleChange = visible => {
+    if (visible) {
+      this.props.onOpen();
     }
-  }
+    this.setState({ open: visible });
+  };
 
   render() {
     let {
       placeholder,
+      maxToShow,
       className,
+      wrapperClassName,
       disabled,
       emptyText,
       filter = this.props.onFilter,
@@ -260,55 +297,59 @@ class Select extends (PureComponent || Component) {
     } = this.props;
 
     let {
+      open,
       selectedItems,
       selectedItem = {},
       extraFilter,
-      open,
       keyword = null
     } = this.state;
 
     let { cid = '' } = selectedItem;
 
-    let openCls = open && !disabled ? 'open' : '';
     let disabledCls = disabled ? 'disabled' : '';
     let prefixCls = `${this.props.prefix}-select`;
-
     return (
-      <div
-        tabIndex="0"
-        className={`${prefixCls} ${className} ${openCls} ${disabledCls}`}
-        onBlur={this.blurHandler}
-        onKeyDown={this.keyupHandler}
+      <Popover
+        display="inline-block"
+        position={Popover.Position.AutoBottomLeft}
+        visible={open}
+        className={`${prefixCls} ${className}`}
+        wrapperClassName={`${prefixCls} ${wrapperClassName} ${disabledCls}`}
+        onVisibleChange={this.handlePopoverVisibleChange}
       >
-        <Trigger
-          prefixCls={prefixCls}
-          trigger={this.trigger}
-          placeholder={placeholder}
-          selectedItems={selectedItems}
-          open={open}
-          keyword={keyword}
-          {...selectedItem}
-          onChange={this.triggerChangeHandler}
-          onDelete={this.triggerDeleteHandler}
-        />
-        {open
-          ? <Popup
-              cid={cid}
-              prefixCls={prefixCls}
-              data={this.sourceData}
-              selectedItems={selectedItems}
-              extraFilter={extraFilter}
-              searchPlaceholder={searchPlaceholder}
-              emptyText={emptyText}
-              keyword={keyword}
-              filter={filter}
-              onAsyncFilter={onAsyncFilter}
-              onChange={this.optionChangedHandler}
-              onFocus={this.popupFocusHandler}
-              onBlur={this.popupBlurHandler}
-            />
-          : ''}
-      </div>
+        <PopoverClickTrigger>
+          <Trigger
+            disabled={disabled}
+            prefixCls={prefixCls}
+            trigger={this.trigger}
+            placeholder={placeholder}
+            selectedItems={selectedItems}
+            keyword={keyword}
+            {...selectedItem}
+            onChange={this.triggerChangeHandler}
+            onDelete={this.triggerDeleteHandler}
+          />
+        </PopoverClickTrigger>
+        <Popover.Content>
+          <Popup
+            ref={ref => (this.popup = ref)}
+            cid={cid}
+            prefixCls={prefixCls}
+            data={this.sourceData}
+            selectedItems={selectedItems}
+            extraFilter={extraFilter}
+            searchPlaceholder={searchPlaceholder}
+            emptyText={emptyText}
+            keyword={keyword}
+            filter={filter}
+            onAsyncFilter={onAsyncFilter}
+            maxToShow={maxToShow}
+            onChange={this.optionChangedHandler}
+            onFocus={this.popupFocusHandler}
+            onBlur={this.popupBlurHandler}
+          />
+        </Popover.Content>
+      </Popover>
     );
   }
 }
@@ -317,8 +358,11 @@ Select.propTypes = {
   data: PropTypes.array,
   prefix: PropTypes.string,
   className: PropTypes.string,
+  open: PropTypes.bool,
+  wrapperClassName: PropTypes.string,
   disabled: PropTypes.bool,
   placeholder: PropTypes.string,
+  maxToShow: PropTypes.number,
   searchPlaceholder: PropTypes.string,
   emptyText: PropTypes.string,
   selectedItem: PropTypes.shape({
@@ -340,8 +384,9 @@ Select.defaultProps = {
   prefix: 'zent',
   disabled: false,
   className: '',
-  trigger: SelectTrigger,
   open: false,
+  wrapperClassName: '',
+  trigger: SelectTrigger,
   placeholder: '请选择',
   searchPlaceholder: '',
   emptyText: '没有找到匹配项',
@@ -352,6 +397,13 @@ Select.defaultProps = {
   selectedItems: [],
   optionValue: 'value',
   optionText: 'text',
+
+  // HACK
+  value: null,
+  index: null,
+  initialValue: null,
+  initialIndex: null,
+
   onChange: noop,
   onDelete: noop,
   onEmptySelected: noop,

@@ -79,6 +79,11 @@ module.exports = {
               component: require('../../packages/zent/src/badge/README.md')
             },
             {
+              path: 'component/card',
+              title: 'Card 卡片',
+              component: require('../../packages/zent/src/card/README.md')
+            },
+            {
               path: 'component/dialog',
               title: 'Dialog 对话框',
               component: require('../../packages/zent/src/dialog/README.md')
@@ -97,6 +102,11 @@ module.exports = {
               path: 'component/pop',
               title: 'Pop 气泡提示',
               component: require('../../packages/zent/src/pop/README.md')
+            },
+            {
+              path: 'component/progress',
+              title: 'Progress 进度条',
+              component: require('../../packages/zent/src/progress/README.md')
             },
             {
               path: 'component/sweet-alert',
@@ -154,6 +164,11 @@ module.exports = {
               component: require('../../packages/zent/src/datetimepicker/README.md')
             },
             {
+              path: 'component/design',
+              title: 'Design 微页面编辑',
+              component: require('../../packages/zent/src/design/README.md')
+            },
+            {
               path: 'component/form',
               title: 'Form 表单',
               component: require('../../packages/zent/src/form/README.md')
@@ -180,8 +195,13 @@ module.exports = {
             },
             {
               path: 'component/select',
-              title: 'Select 选项',
+              title: 'Select 选择器',
               component: require('../../packages/zent/src/select/README.md')
+            },
+            {
+              path: 'component/sku',
+              title: 'SKU 规格选择器',
+              component: require('../../packages/zent/src/sku/README.md')
             },
             {
               path: 'component/slider',
@@ -262,6 +282,21 @@ module.exports = {
               path: 'component/portal',
               title: 'Portal 传送门',
               component: require('../../packages/zent/src/portal/README.md')
+            }
+          ]
+        },
+        {
+          groupName: '业务组件',
+          list: [
+            {
+              path: 'component/block-header',
+              title: 'BlockHeader 标题',
+              component: require('../../packages/zent/src/block-header/README.md')
+            },
+            {
+              path: 'component/date-range-quick-picker',
+              title: 'DateRangeQuickPicker 时间区域',
+              component: require('../../packages/zent/src/date-range-quick-picker/README.md')
             }
           ]
         }
