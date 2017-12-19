@@ -61,18 +61,44 @@ describe('Tree', () => {
     expect(wrapper.hasClass('zent-tree')).toBe(true);
     expect(wrapper.find('.zent-tree').find('li').length).toBe(4);
     expect(wrapper.find('.zent-tree').find('ul').length).toBe(3);
-    expect(wrapper.find('.zent-tree').children().at(0).type()).toBe('li');
-    expect(wrapper.find('li').at(0).childAt(0).type()).toBe('div');
-    expect(wrapper.find('li').at(0).childAt(1).type()).toBe('ul');
-    const example = wrapper.find('li').at(0).childAt(0);
+    expect(
+      wrapper
+        .find('.zent-tree')
+        .children()
+        .at(0)
+        .type()
+    ).toBe('li');
+    expect(
+      wrapper
+        .find('li')
+        .at(0)
+        .childAt(0)
+        .type()
+    ).toBe('div');
+    expect(
+      wrapper
+        .find('li')
+        .at(0)
+        .childAt(1)
+        .type()
+    ).toBe('ul');
+    const example = wrapper
+      .find('li')
+      .at(0)
+      .childAt(0);
     expect(example.hasClass('zent-tree-bar')).toBe(true);
     expect(example.hasClass('off')).toBe(true);
     expect(example.children().length).toBe(2);
-    expect(example.childAt(0).type()).toBe('icon');
+    expect(example.childAt(0).type()).toBe('i');
     expect(example.childAt(1).type()).toBe('div');
     expect(example.childAt(1).hasClass('zent-tree-node')).toBe(true);
     expect(example.childAt(1).find('span').length).toBe(1);
-    expect(example.childAt(1).find('span').text()).toBe('root');
+    expect(
+      example
+        .childAt(1)
+        .find('span')
+        .text()
+    ).toBe('root');
   });
 
   it('Tree support "tree" data as default set', () => {
@@ -103,23 +129,49 @@ describe('Tree', () => {
     expect(wrapper.hasClass('zent-tree')).toBe(true);
     expect(wrapper.find('.zent-tree').find('li').length).toBe(4);
     expect(wrapper.find('.zent-tree').find('ul').length).toBe(3);
-    expect(wrapper.find('.zent-tree').children().at(0).type()).toBe('li');
-    expect(wrapper.find('li').at(0).childAt(0).type()).toBe('div');
-    expect(wrapper.find('li').at(0).childAt(1).type()).toBe('ul');
+    expect(
+      wrapper
+        .find('.zent-tree')
+        .children()
+        .at(0)
+        .type()
+    ).toBe('li');
+    expect(
+      wrapper
+        .find('li')
+        .at(0)
+        .childAt(0)
+        .type()
+    ).toBe('div');
+    expect(
+      wrapper
+        .find('li')
+        .at(0)
+        .childAt(1)
+        .type()
+    ).toBe('ul');
     /**
      * No icon in Node without Leaf
      * .zent-tree-bar.off?
      *   .zent-tree-node
      *     span||{{title}}
      */
-    const example = wrapper.find('li').at(2).childAt(0);
+    const example = wrapper
+      .find('li')
+      .at(2)
+      .childAt(0);
     expect(example.hasClass('zent-tree-bar')).toBe(true);
     expect(example.hasClass('off')).toBe(true);
     expect(example.children().length).toBe(1);
     expect(example.childAt(0).type()).toBe('div');
     expect(example.childAt(0).hasClass('zent-tree-node')).toBe(true);
     expect(example.childAt(0).find('span').length).toBe(1);
-    expect(example.childAt(0).find('span').text()).toBe('grandSon');
+    expect(
+      example
+        .childAt(0)
+        .find('span')
+        .text()
+    ).toBe('grandSon');
   });
 
   // BUG: 应该在deepClone里直接抛出一个错误
@@ -182,18 +234,44 @@ describe('Tree', () => {
     expect(wrapper.hasClass('zent-tree')).toBe(true);
     expect(wrapper.find('.zent-tree').find('li').length).toBe(4);
     expect(wrapper.find('.zent-tree').find('ul').length).toBe(3);
-    expect(wrapper.find('.zent-tree').children().at(0).type()).toBe('li');
-    expect(wrapper.find('li').at(0).childAt(0).type()).toBe('div');
-    expect(wrapper.find('li').at(0).childAt(1).type()).toBe('ul');
-    const example = wrapper.find('li').at(0).childAt(0);
+    expect(
+      wrapper
+        .find('.zent-tree')
+        .children()
+        .at(0)
+        .type()
+    ).toBe('li');
+    expect(
+      wrapper
+        .find('li')
+        .at(0)
+        .childAt(0)
+        .type()
+    ).toBe('div');
+    expect(
+      wrapper
+        .find('li')
+        .at(0)
+        .childAt(1)
+        .type()
+    ).toBe('ul');
+    const example = wrapper
+      .find('li')
+      .at(0)
+      .childAt(0);
     expect(example.hasClass('zent-tree-bar')).toBe(true);
     expect(example.hasClass('off')).toBe(true);
     expect(example.children().length).toBe(2);
-    expect(example.childAt(0).type()).toBe('icon');
+    expect(example.childAt(0).type()).toBe('i');
     expect(example.childAt(1).type()).toBe('div');
     expect(example.childAt(1).hasClass('zent-tree-node')).toBe(true);
     expect(example.childAt(1).find('span').length).toBe(1);
-    expect(example.childAt(1).find('span').text()).toBe('root');
+    expect(
+      example
+        .childAt(1)
+        .find('span')
+        .text()
+    ).toBe('root');
   });
 
   it('Tree Support expandAll prop and render function as prop', () => {
@@ -227,7 +305,12 @@ describe('Tree', () => {
         expandAll
       />
     );
-    expect(wrapper.find('span').at(0).text()).toBe('zent-root');
+    expect(
+      wrapper
+        .find('span')
+        .at(0)
+        .text()
+    ).toBe('zent-root');
   });
 
   it('Tree will treat node as an empty value with "plain" type when cound not find its parent except root node', () => {
@@ -245,7 +328,12 @@ describe('Tree', () => {
     ];
     const wrapper = shallow(<Tree dataType="plain" data={data} />);
     expect(wrapper.find('li').length).toBe(1);
-    expect(wrapper.find('li').find('span').text()).toBe('root');
+    expect(
+      wrapper
+        .find('li')
+        .find('span')
+        .text()
+    ).toBe('root');
   });
 
   it('Tree will update when data prop changed', () => {
@@ -371,7 +459,7 @@ describe('Tree', () => {
 
     // NOTE: jest and enzyme couldn't simulate switcher.click()
     expect(rootSpan.closest('.zent-tree-bar').hasClass('off')).toBe(true);
-    const iconRoot = wrapper.find('icon').at(0);
+    const iconRoot = wrapper.find('i').at(0);
     iconRoot.simulate('click');
     jest.runAllTimers();
     expect(rootSpan.closest('.zent-tree-bar').hasClass('off')).toBe(false);
@@ -392,7 +480,7 @@ describe('Tree', () => {
     const expandWrapper = mount(
       <Tree dataType="plain" data={data} onExpand={onExpandMock} />
     );
-    const expandIcon = expandWrapper.find('icon').at(0);
+    const expandIcon = expandWrapper.find('i').at(0);
     expandIcon.simulate('click');
     jest.runAllTimers();
     expect(onExpandMock.mock.calls.length).toBe(1);
@@ -416,10 +504,16 @@ describe('Tree', () => {
       }
     ];
     let hackWrapper = mount(<Tree data={hackData} />);
-    hackWrapper.find('span').at(1).simulate('click');
+    hackWrapper
+      .find('span')
+      .at(1)
+      .simulate('click');
     const onSelectMock = jest.fn();
     hackWrapper = mount(<Tree data={hackData} onSelect={onSelectMock} />);
-    hackWrapper.find('span').at(1).simulate('click');
+    hackWrapper
+      .find('span')
+      .at(1)
+      .simulate('click');
     expect(onSelectMock.mock.calls.length).toBe(1);
     hackWrapper = mount(
       <Tree
@@ -428,7 +522,10 @@ describe('Tree', () => {
         autoExpandOnSelect={false}
       />
     );
-    hackWrapper.find('span').at(1).simulate('click');
+    hackWrapper
+      .find('span')
+      .at(1)
+      .simulate('click');
     expect(onSelectMock.mock.calls.length).toBe(2);
   });
 
@@ -458,8 +555,8 @@ describe('Tree', () => {
     const wrapper = mount(<Tree dataType="plain" data={data} />);
     const rootSpan = wrapper.find('span').at(0);
     const sonSpan = wrapper.find('span').at(1);
-    const iconRoot = wrapper.find('icon').at(0);
-    const iconSon = wrapper.find('icon').at(1);
+    const iconRoot = wrapper.find('i').at(0);
+    const iconSon = wrapper.find('i').at(1);
 
     iconRoot.simulate('click');
     jest.runAllTimers();
@@ -498,7 +595,7 @@ describe('Tree', () => {
       }
     ];
     const wrapper = mount(<Tree data={data} loadMore={loadMoreMock} />);
-    const rootIcon = wrapper.find('icon');
+    const rootIcon = wrapper.find('i');
     rootIcon.simulate('click');
     // jest.runAllTimers();
     expect(loadMoreMock.mock.calls.length).toBe(1);
@@ -521,7 +618,7 @@ describe('Tree', () => {
     const rejectWrapper = mount(
       <Tree data={dataWithEmptyArr} loadMore={loadMoreMockRejected} />
     );
-    const rejectIcon = rejectWrapper.find('icon');
+    const rejectIcon = rejectWrapper.find('i');
 
     expect(() => {
       rejectIcon.simulate('click');
@@ -543,7 +640,7 @@ describe('Tree', () => {
       }
     ];
     const hackWrapper = mount(<Tree data={hackData} loadMore={loadMoreMock} />);
-    const hackIcon = hackWrapper.find('icon').at(0);
+    const hackIcon = hackWrapper.find('i').at(0);
     hackIcon.simulate('click');
     jest.runAllTimers();
     expect(loadMoreMock.mock.calls.length).toBe(1);
@@ -565,7 +662,7 @@ describe('Tree', () => {
     const wrapper = mount(
       <Tree data={data} loadMore={() => new Promise(resolve => resolve())} />
     );
-    const sonIcon = wrapper.find('icon').at(1);
+    const sonIcon = wrapper.find('i').at(1);
     sonIcon.simulate('click');
     jest.runAllTimers();
 
@@ -614,16 +711,27 @@ describe('Tree', () => {
       }
     ];
 
+    let onCheckedData;
+    const onCheck = checkedData => {
+      onCheckedData = checkedData;
+    };
+
     const wrapper = mount(
       <Tree
         data={data}
         defaultCheckedKeys={[10]}
         checkable
         disabledCheckedKeys={[10]}
+        onCheck={onCheck}
       />
     );
     expect(wrapper.state('checkedTree')['1'].t).toBe(1);
-    expect(wrapper.find('Checkbox').at(7).prop('checked')).toBe(true);
+    expect(
+      wrapper
+        .find('Checkbox')
+        .at(7)
+        .prop('checked')
+    ).toBe(true);
 
     wrapper
       .find('Checkbox input')
@@ -632,6 +740,7 @@ describe('Tree', () => {
     expect(wrapper.find('Checkbox').everyWhere(n => n.prop('checked'))).toBe(
       true
     );
+    expect(onCheckedData.length).toBe(8);
     wrapper
       .find('Checkbox input')
       .at(0)
@@ -641,6 +750,7 @@ describe('Tree', () => {
         .find('Checkbox')
         .everyWhere(n => n.prop('checked') && n.prop('indeterminate'))
     ).toBe(false);
+    expect(onCheckedData.length).toBe(0);
 
     wrapper
       .find('Checkbox input')
@@ -654,15 +764,40 @@ describe('Tree', () => {
       .find('Checkbox input')
       .at(1)
       .simulate('change', { target: { checked: false } });
-    expect(wrapper.find('Checkbox').at(1).prop('checked')).toBe(false);
-    expect(wrapper.find('Checkbox').at(3).prop('checked')).toBe(false);
-    expect(wrapper.find('Checkbox').at(2).prop('checked')).toBe(false);
-    expect(wrapper.find('Checkbox').at(7).prop('checked')).toBe(true);
+    expect(
+      wrapper
+        .find('Checkbox')
+        .at(1)
+        .prop('checked')
+    ).toBe(false);
+    expect(
+      wrapper
+        .find('Checkbox')
+        .at(3)
+        .prop('checked')
+    ).toBe(false);
+    expect(
+      wrapper
+        .find('Checkbox')
+        .at(2)
+        .prop('checked')
+    ).toBe(false);
+    expect(
+      wrapper
+        .find('Checkbox')
+        .at(7)
+        .prop('checked')
+    ).toBe(true);
     wrapper
       .find('Checkbox input')
       .at(7)
       .simulate('change', { target: { checked: false } });
-    expect(wrapper.find('Checkbox').at(7).prop('checked')).toBe(false);
+    expect(
+      wrapper
+        .find('Checkbox')
+        .at(7)
+        .prop('checked')
+    ).toBe(false);
   });
 
   it('Tree supports custom operations', () => {
@@ -695,13 +830,47 @@ describe('Tree', () => {
     ];
     const wrapper = mount(<Tree data={data} operations={operations} />);
     expect(wrapper.find('.operation').length).toBe(2);
-    expect(wrapper.find('.operation').at(0).find('span').length).toBe(1);
-    expect(wrapper.find('.operation').at(0).find('.foo').length).toBe(1);
-    expect(wrapper.find('.operation').at(0).find('.bar').length).toBe(0);
-    expect(wrapper.find('.operation').at(1).find('span').length).toBe(2);
-    wrapper.find('.operation').at(0).find('span').simulate('click');
-    wrapper.find('.operation').at(1).find('span').at(0).simulate('click');
-    wrapper.find('.operation').at(1).find('span').at(1).simulate('click');
+    expect(
+      wrapper
+        .find('.operation')
+        .at(0)
+        .find('span').length
+    ).toBe(1);
+    expect(
+      wrapper
+        .find('.operation')
+        .at(0)
+        .find('.foo').length
+    ).toBe(1);
+    expect(
+      wrapper
+        .find('.operation')
+        .at(0)
+        .find('.bar').length
+    ).toBe(0);
+    expect(
+      wrapper
+        .find('.operation')
+        .at(1)
+        .find('span').length
+    ).toBe(2);
+    wrapper
+      .find('.operation')
+      .at(0)
+      .find('span')
+      .simulate('click');
+    wrapper
+      .find('.operation')
+      .at(1)
+      .find('span')
+      .at(0)
+      .simulate('click');
+    wrapper
+      .find('.operation')
+      .at(1)
+      .find('span')
+      .at(1)
+      .simulate('click');
     expect(actionMockClone.mock.calls.length).toBe(2);
     expect(actionMockDelete.mock.calls.length).toBe(1);
   });

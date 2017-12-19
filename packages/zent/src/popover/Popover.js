@@ -26,25 +26,30 @@ import isBoolean from 'lodash/isBoolean';
 import isPromise from 'utils/isPromise';
 import PropTypes from 'prop-types';
 import kindOf from 'utils/kindOf';
+import getWidth from 'utils/getWidth';
 
 import PopoverContent from './Content';
 import PopoverTrigger from './trigger/Trigger';
 
 const SKIPPED = () => {};
 
-function handleBeforeHook(beforeFn, arity, continuation) {
+function handleBeforeHook(beforeFn, arity, continuation, escape) {
   // 有参数，传入continuation，由外部去控制何时调用
-  if (arity >= 1) {
+  // escapse 用来终止 onChange 操作
+  if (arity === 1) {
     return beforeFn(continuation);
+  } else if (arity >= 2) {
+    return beforeFn(continuation, escape);
   }
 
-  // 无参数，如果返回Promise那么resolve后调用continuation；如果返回不是Promise，直接调用Promise
+  // 无参数，如果返回Promise那么resolve后调用continuation, reject 的话调用 escape；
+  // 如果返回不是Promise，直接调用Promise
   const mayBePromise = beforeFn();
   if (!isPromise(mayBePromise) && mayBePromise !== SKIPPED) {
     return continuation();
   }
 
-  mayBePromise.then(continuation);
+  mayBePromise.then(continuation, escape);
 }
 
 export const PopoverContextType = {
@@ -92,7 +97,10 @@ export default class Popover extends (PureComponent || Component) {
 
     // 两个必须一起出现
     visible: PropTypes.bool,
-    onVisibleChange: PropTypes.func
+    onVisibleChange: PropTypes.func,
+
+    // 位置改变后会触发，可能存在实际位置没变但也触发的情况
+    onPositionUpdated: PropTypes.func
   };
 
   static defaultProps = {
@@ -105,7 +113,8 @@ export default class Popover extends (PureComponent || Component) {
     onClose: noop,
     onShow: noop,
     cushion: 0,
-    containerSelector: 'body'
+    containerSelector: 'body',
+    onPositionUpdated: noop
   };
 
   static contextTypes = PopoverContextType;
@@ -188,25 +197,38 @@ export default class Popover extends (PureComponent || Component) {
       this.pendingOnBeforeHook = true;
       return beforeHook(...args);
     };
+    const escapse = () => {
+      this.pendingOnBeforeHook = false;
+    };
 
     if (this.isVisibilityControlled(props)) {
       if (this.pendingOnBeforeHook || props.visible === visible) {
         return;
       }
 
-      handleBeforeHook(onBefore, beforeHook.length, () => {
-        props.onVisibleChange(visible);
-        this.pendingOnBeforeHook = false;
-      });
+      handleBeforeHook(
+        onBefore,
+        beforeHook.length,
+        () => {
+          props.onVisibleChange(visible);
+          this.pendingOnBeforeHook = false;
+        },
+        escapse
+      );
     } else {
       if (this.pendingOnBeforeHook || state.visible === visible) {
         return;
       }
 
-      handleBeforeHook(onBefore, beforeHook.length, () => {
-        this.safeSetState({ visible });
-        this.pendingOnBeforeHook = false;
-      });
+      handleBeforeHook(
+        onBefore,
+        beforeHook.length,
+        () => {
+          this.safeSetState({ visible });
+          this.pendingOnBeforeHook = false;
+        },
+        escapse
+      );
     }
   };
 
@@ -215,12 +237,25 @@ export default class Popover extends (PureComponent || Component) {
   };
 
   onTriggerRefChange = triggerInstance => {
-    this.triggerNode = ReactDOM.findDOMNode(triggerInstance);
+    this.triggerNode = triggerInstance
+      ? ReactDOM.findDOMNode(triggerInstance)
+      : undefined;
+    this.triggerInstance = triggerInstance;
+  };
+
+  onContentRefChange = contentInstance => {
+    this.contentInstance = contentInstance;
   };
 
   getTriggerNode = () => {
     return this.triggerNode;
   };
+
+  adjustPosition() {
+    if (this.contentInstance && this.contentInstance.adjustPosition) {
+      this.contentInstance.adjustPosition();
+    }
+  }
 
   open = () => {
     this.setVisible(true);
@@ -328,13 +363,15 @@ export default class Popover extends (PureComponent || Component) {
       wrapperClassName,
       containerSelector,
       position,
-      cushion
+      cushion,
+      width,
+      onPositionUpdated
     } = this.props;
     const visible = this.getVisible();
 
     return (
       <div
-        style={{ display }}
+        style={{ display, ...getWidth(width) }}
         className={cx(`${prefix}-popover-wrapper`, wrapperClassName)}
       >
         {React.cloneElement(trigger, {
@@ -354,10 +391,12 @@ export default class Popover extends (PureComponent || Component) {
           id: this.id,
           getContentNode: this.getPopoverNode,
           getAnchor: this.getTriggerNode,
+          ref: this.onContentRefChange,
           visible,
           cushion,
           containerSelector,
-          placement: position
+          placement: position,
+          onPositionUpdated
         })}
       </div>
     );

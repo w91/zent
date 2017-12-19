@@ -1,4 +1,6 @@
 import React from 'react';
+import Button from 'button';
+
 import { noop } from '../constants';
 
 const PanelFooter = props => {
@@ -15,17 +17,15 @@ const PanelFooter = props => {
 
   return (
     <div className="panel__footer">
-      {showLink &&
+      {showLink && (
         <a className={linkCls} onClick={onClickLink}>
           {linkText}
-        </a>}
-      {showError &&
-        <span className="error-tips">
-          {errorText}
-        </span>}
-      <button className="btn--confirm" type="button" onClick={onClickButton}>
+        </a>
+      )}
+      {showError && <span className="error-tips">{errorText}</span>}
+      <Button className="btn--confirm" type="primary" onClick={onClickButton}>
         {buttonText}
-      </button>
+      </Button>
     </div>
   );
 };

@@ -1,6 +1,8 @@
 #!/bin/bash
 
+set -e
+
 lerna clean --yes
 
-cd packages/zent && yarn
-cd ../babel-plugin-zent && yarn
+cd packages/zent && yarn && yarn build
+cd ../babel-plugin-zent && yarn && yarn build

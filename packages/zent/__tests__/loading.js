@@ -32,8 +32,29 @@ describe('Loading', () => {
         />
       </div>
     );
-    wrapper.find('button').at(0).simulate('click');
-    wrapper.find('button').at(1).simulate('click');
+    wrapper
+      .find('button')
+      .at(0)
+      .simulate('click');
+    jest.runOnlyPendingTimers();
+
+    wrapper
+      .find('button')
+      .at(1)
+      .simulate('click');
+    jest.runOnlyPendingTimers();
+
+    wrapper
+      .find('button')
+      .at(0)
+      .simulate('click');
+    jest.runOnlyPendingTimers();
+
+    wrapper
+      .find('button')
+      .at(1)
+      .simulate('click');
+    jest.runOnlyPendingTimers();
   });
 
   it('Loading has static model, support containerClass and prefix...props', () => {
@@ -41,7 +62,12 @@ describe('Loading', () => {
     expect(wrapper.prop('height')).toBe(160);
     expect(wrapper.prop('zIndex')).toBe(9998);
     expect(wrapper.find('Loading').find('div').length).toBe(1);
-    expect(wrapper.find('Loading').find('div').hasClass('foo')).toBe(true);
+    expect(
+      wrapper
+        .find('Loading')
+        .find('div')
+        .hasClass('foo')
+    ).toBe(true);
     wrapper.setProps({ show: true });
     wrapper.unmount();
   });

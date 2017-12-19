@@ -81,14 +81,39 @@ describe('babel-plugin-zent', () => {
 
     expect(
       compile("import { Portal } from 'zent'", { automaticStyleImport: true })
-    ).not.toMatch(/zent\/css\//);
+    ).toMatch(/require\('zent\/css\/base.css'\)/);
 
     expect(
       compile("import { Pop, Button } from 'zent'", {
         automaticStyleImport: true
       })
     ).toMatch(
-      /require\('zent\/css\/pop.css'\)[\s\S]*require\('zent\/css\/button.css'\)/im
+      /require\('zent\/css\/button.css'\)[\s\S]*require\('zent\/css\/pop.css'\)/im
+    );
+  });
+
+  it('can add postcss imports', () => {
+    expect(
+      compile("import { Button } from 'zent'", {
+        automaticStyleImport: true,
+        useRawStyle: true
+      })
+    ).toMatch(/require\('zent\/assets\/button.pcss'\)/);
+
+    expect(
+      compile("import { Portal } from 'zent'", {
+        automaticStyleImport: true,
+        useRawStyle: true
+      })
+    ).toMatch(/require\('zent\/assets\/base.pcss'\)/);
+
+    expect(
+      compile("import { Pop, Button } from 'zent'", {
+        automaticStyleImport: true,
+        useRawStyle: true
+      })
+    ).toMatch(
+      /require\('zent\/assets\/button.pcss'\)[\s\S]*require\('zent\/assets\/pop.pcss'\)/im
     );
   });
 });

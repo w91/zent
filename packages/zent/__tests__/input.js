@@ -3,6 +3,12 @@ import { shallow, mount } from 'enzyme';
 import Input from 'input';
 
 describe('Input', () => {
+  beforeAll(() => {
+    window.getSelection = function() {
+      return 'autoSelect';
+    };
+  });
+
   it('will render div wrapper contains an input without any props', () => {
     const wrapper = shallow(<Input />);
     expect(wrapper.type()).toBe('div');
@@ -24,13 +30,19 @@ describe('Input', () => {
     );
     expect(wrapper.hasClass('foo-input-wrapper')).toBe(true);
     expect(wrapper.hasClass('foo-input-addons')).toBe(true);
-    expect(wrapper.find('span').at(0).hasClass('foo-input-addon-before')).toBe(
-      true
-    );
+    expect(
+      wrapper
+        .find('span')
+        .at(0)
+        .hasClass('foo-input-addon-before')
+    ).toBe(true);
     expect(wrapper.find('input').hasClass('foo-input')).toBe(true);
-    expect(wrapper.find('span').at(1).hasClass('foo-input-addon-after')).toBe(
-      true
-    );
+    expect(
+      wrapper
+        .find('span')
+        .at(1)
+        .hasClass('foo-input-addon-after')
+    ).toBe(true);
   });
 
   it('pass any props to real input element except "className" & "prefix"', () => {
@@ -59,11 +71,36 @@ describe('Input', () => {
 
   it('can insert span aside controlled by prop addon(Before|After)(node)', () => {
     const wrapper = shallow(<Input addonAfter="foo" addonBefore="bar" />);
-    expect(wrapper.find('div').childAt(0).type()).toBe('span');
-    expect(wrapper.find('div').childAt(0).text()).toBe('bar');
-    expect(wrapper.find('div').childAt(1).type()).toBe('input');
-    expect(wrapper.find('div').childAt(2).type()).toBe('span');
-    expect(wrapper.find('div').childAt(2).text()).toBe('foo');
+    expect(
+      wrapper
+        .find('div')
+        .childAt(0)
+        .type()
+    ).toBe('span');
+    expect(
+      wrapper
+        .find('div')
+        .childAt(0)
+        .text()
+    ).toBe('bar');
+    expect(
+      wrapper
+        .find('div')
+        .childAt(1)
+        .type()
+    ).toBe('input');
+    expect(
+      wrapper
+        .find('div')
+        .childAt(2)
+        .type()
+    ).toBe('span');
+    expect(
+      wrapper
+        .find('div')
+        .childAt(2)
+        .text()
+    ).toBe('foo');
   });
 
   it('can handle onChange event', () => {
@@ -136,5 +173,46 @@ describe('Input', () => {
     const wrapper = mount(<Input type="textarea" />);
     wrapper.instance().focus();
     expect(wrapper.find('textarea').node === document.activeElement).toBe(true);
+  });
+
+  it('can have input auto select', () => {
+    const wrapper = mount(<Input defaultValue="autoSelect" autoSelect />);
+    expect(
+      wrapper.find('input').props().defaultValue ===
+        window.getSelection().toString()
+    ).toBe(true);
+  });
+
+  it('can have input auto select and inintSelectionRange', () => {
+    const wrapper = mount(
+      <Input
+        defaultValue="autoSelect"
+        autoSelect
+        initSelectionStart={0}
+        initSelectionEnd={10}
+      />
+    );
+    expect(
+      wrapper.find('input').props().defaultValue ===
+        window.getSelection().toString()
+    ).toBe(true);
+  });
+
+  it('can call input select method', () => {
+    const wrapper = mount(<Input defaultValue="autoSelect" />);
+    wrapper.instance().select();
+    expect(
+      wrapper.find('input').props().defaultValue ===
+        window.getSelection().toString()
+    ).toBe(true);
+  });
+
+  it('can call textarea select method', () => {
+    const wrapper = mount(<Input type="textarea" defaultValue="autoSelect" />);
+    wrapper.instance().select();
+    expect(
+      wrapper.find('textarea').props().defaultValue ===
+        window.getSelection().toString()
+    ).toBe(true);
   });
 });

@@ -2,13 +2,20 @@ import React, { Component, PureComponent } from 'react';
 import classNames from 'classnames';
 import Input from 'input';
 import Popover from 'popover';
-import PropTypes from 'prop-types';
+import formatDate from 'zan-utils/date/formatDate';
+import parseDate from 'zan-utils/date/parseDate';
+import getWidth from 'utils/getWidth';
 
 import MonthPanel from './month/MonthPanel';
 import PanelFooter from './common/PanelFooter';
 import { CURRENT } from './utils/';
-import { formatDate, maybeParseDate, dayStart } from './utils/date';
-import { noop } from './constants/';
+import { dayStart } from './utils/date';
+import {
+  noop,
+  popPositionMap,
+  commonProps,
+  commonPropTypes
+} from './constants/';
 
 function extractStateFromProps(props) {
   let showPlaceholder;
@@ -17,27 +24,26 @@ function extractStateFromProps(props) {
   const { format, value, defaultValue } = props;
 
   if (value) {
-    const tmp = maybeParseDate(value, format);
+    const tmp = parseDate(value, format);
     if (tmp) {
       showPlaceholder = false;
       selected = actived = tmp;
     } else {
       console.warn("date and format don't match."); // eslint-disable-line
       showPlaceholder = true;
-      selected = actived = dayStart();
+      actived = dayStart();
     }
   } else {
     showPlaceholder = true;
     if (defaultValue) {
-      actived = maybeParseDate(defaultValue, format);
+      actived = parseDate(defaultValue, format);
     } else {
       actived = dayStart();
     }
-    selected = actived = maybeParseDate(actived, format);
   }
 
   return {
-    value: formatDate(selected, format),
+    value: selected && formatDate(selected, format),
     actived,
     selected,
     openPanel: false,
@@ -47,25 +53,13 @@ function extractStateFromProps(props) {
 
 class MonthPicker extends (PureComponent || Component) {
   static PropTypes = {
-    prefix: PropTypes.string,
-    name: PropTypes.string,
-    className: PropTypes.string,
-    placeholder: PropTypes.string,
-    confirmText: PropTypes.string,
-    format: PropTypes.string,
-    onChange: PropTypes.func,
-    onClick: PropTypes.func,
-    onOpen: PropTypes.func,
-    onClose: PropTypes.func
+    ...commonPropTypes
   };
 
   static defaultProps = {
-    prefix: 'zent',
-    className: '',
+    ...commonProps,
     placeholder: '请选择月份',
-    confirmText: '确定',
-    format: 'YYYY-MM',
-    onChange: noop
+    format: 'YYYY-MM'
   };
 
   constructor(props) {
@@ -84,14 +78,21 @@ class MonthPicker extends (PureComponent || Component) {
     });
   };
 
-  onSelectMonth = val => {
-    const { onClick } = this.props;
+  onSelectMonth = (val, isYear = false) => {
+    const { onClick, isFooterVisble } = this.props;
+    const month = val.getMonth();
+
+    if (!isYear && this.isDisabled(month)) return;
+
     this.setState({
       selected: val,
       actived: val
     });
 
     onClick && onClick(val);
+    if (!isFooterVisble) {
+      this.onConfirm();
+    }
   };
 
   onClearInput = evt => {
@@ -100,9 +101,12 @@ class MonthPicker extends (PureComponent || Component) {
   };
 
   onConfirm = () => {
-    const { format } = this.props;
-    const { selected } = this.state;
-    const value = formatDate(selected, format);
+    const { props, state } = this;
+
+    let value = '';
+    if (state.selected) {
+      value = formatDate(state.selected, props.format);
+    }
 
     this.setState({
       value,
@@ -112,27 +116,45 @@ class MonthPicker extends (PureComponent || Component) {
     this.props.onChange(value);
   };
 
-  renderPicker() {
-    const state = this.state;
-    const props = this.props;
+  isDisabled = val => {
+    const year = this.state.actived.getFullYear();
+    const dateStr = `${year}-${val + 1}`;
+    const ret = parseDate(dateStr, 'YYYY-MM');
+    const { disabledDate, min, max, format } = this.props;
 
+    if (disabledDate && disabledDate(ret)) return true;
+    if (min && ret < parseDate(min, format)) return true;
+    if (max && ret > parseDate(max, format)) return true;
+
+    return false;
+  };
+
+  renderPicker() {
+    const { state, props } = this;
     let monthPicker;
     if (state.openPanel) {
+      const monthPickerCls = classNames({
+        'month-picker': true,
+        small: props.isFooterVisble
+      });
       monthPicker = (
-        <div className="month-picker" ref={ref => (this.picker = ref)}>
+        <div className={monthPickerCls} ref={ref => (this.picker = ref)}>
           <MonthPanel
             actived={state.actived}
             selected={state.selected}
             onChange={this.onChangeMonth}
             onSelect={this.onSelectMonth}
+            disabledDate={this.isDisabled}
           />
-          <PanelFooter
-            buttonText={props.confirmText}
-            linkText="当前月"
-            linkCls="link--current"
-            onClickLink={() => this.onSelectMonth(CURRENT)}
-            onClickButton={this.onConfirm}
-          />
+          {props.isFooterVisble ? (
+            <PanelFooter
+              buttonText={props.confirmText}
+              linkText="当前月"
+              linkCls="link--current"
+              onClickLink={() => this.onSelectMonth(CURRENT)}
+              onClickButton={this.onConfirm}
+            />
+          ) : null}
         </div>
       );
     }
@@ -153,26 +175,26 @@ class MonthPicker extends (PureComponent || Component) {
   };
 
   render() {
-    const state = this.state;
-    const props = this.props;
+    const { props, state } = this;
     const wrapperCls = `${props.prefix}-datetime-picker ${props.className}`;
     const inputCls = classNames({
       'picker-input': true,
       'picker-input--filled': !state.showPlaceholder,
       'picker-input--disabled': props.disabled
     });
+    const widthStyle = getWidth(props.width);
 
     return (
-      <div className={wrapperCls}>
+      <div style={widthStyle} className={wrapperCls}>
         <Popover
           cushion={5}
           visible={state.openPanel}
           onVisibleChange={this.togglePicker}
           className={`${props.prefix}-datetime-picker-popover ${props.className}-popover`}
-          position={Popover.Position.AutoBottomLeft}
+          position={popPositionMap[props.popPosition.toLowerCase()]}
         >
           <Popover.Trigger.Click>
-            <div className={inputCls}>
+            <div style={widthStyle} className={inputCls}>
               <Input
                 name={props.name}
                 value={state.showPlaceholder ? props.placeholder : state.value}
@@ -187,9 +209,7 @@ class MonthPicker extends (PureComponent || Component) {
               />
             </div>
           </Popover.Trigger.Click>
-          <Popover.Content>
-            {this.renderPicker()}
-          </Popover.Content>
+          <Popover.Content>{this.renderPicker()}</Popover.Content>
         </Popover>
       </div>
     );

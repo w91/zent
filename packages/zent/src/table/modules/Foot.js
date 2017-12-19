@@ -2,6 +2,7 @@ import React, { Component, PureComponent } from 'react';
 import ReactDOM from 'react-dom';
 import Pagination from 'pagination';
 import Checkbox from 'checkbox';
+import isNil from 'lodash/isNil';
 
 import helper from '../helper.js';
 
@@ -9,14 +10,21 @@ export default class Foot extends (PureComponent || Component) {
   // 拿到所有的选中的item
   renderBatchComps(selectedRows, batchComponents) {
     return batchComponents.map((comp, index) => {
+      let subComponent;
       if (helper.isReactComponent(comp)) {
         const Comp = comp;
-        return <Comp key={index} data={selectedRows} />;
+        subComponent = <Comp data={selectedRows} />;
+      } else if (typeof comp === 'function') {
+        subComponent = comp(selectedRows, index);
+      } else {
+        subComponent = comp;
       }
-      if (typeof comp === 'function') {
-        return comp(selectedRows, index);
-      }
-      return comp;
+
+      return (
+        <div className="subcomponent-wrapper" key={index}>
+          {subComponent}
+        </div>
+      );
     });
   }
 
@@ -60,33 +68,36 @@ export default class Foot extends (PureComponent || Component) {
     }
 
     return (
-      shouldRenderFoot &&
-      <div className="tfoot clearfix" style={this.footStyleFixed}>
-        <div className={batchClassName} ref={c => (this.batch = c)}>
-          {needSelect &&
-            batchComponents &&
-            batchComponents.length > 0 &&
-            <Checkbox
-              className="select-check"
-              onChange={this.onSelect}
-              checked={selection.isSelectAll}
-              indeterminate={selection.isSelectPart}
-            />}
-          {batchComponents &&
-            batchComponents.length > 0 &&
-            this.renderBatchComps(selectedRows, batchComponents)}
+      shouldRenderFoot && (
+        <div className="tfoot clearfix" style={this.footStyleFixed}>
+          <div className={batchClassName} ref={c => (this.batch = c)}>
+            {needSelect &&
+              batchComponents &&
+              batchComponents.length > 0 && (
+                <Checkbox
+                  className="select-check"
+                  onChange={this.onSelect}
+                  checked={selection.isSelectAll}
+                  indeterminate={selection.isSelectPart}
+                />
+              )}
+            {batchComponents &&
+              batchComponents.length > 0 &&
+              this.renderBatchComps(selectedRows, batchComponents)}
+          </div>
+          <div className="tfoot__page">
+            {Object.keys(pageInfo).length > 0 && (
+              <Pagination
+                current={current}
+                totalItem={isNil(totalItem) ? total : totalItem}
+                pageSize={isNil(pageSize) ? limit : pageSize}
+                maxPageToShow={maxPageToShow}
+                onChange={onPageChange}
+              />
+            )}
+          </div>
         </div>
-        <div className="tfoot__page">
-          {Object.keys(pageInfo).length > 0 &&
-            <Pagination
-              current={current}
-              totalItem={totalItem || total}
-              pageSize={pageSize || limit}
-              maxPageToShow={maxPageToShow}
-              onChange={onPageChange}
-            />}
-        </div>
-      </div>
+      )
     );
   }
 }

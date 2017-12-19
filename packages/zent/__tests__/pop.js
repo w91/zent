@@ -43,11 +43,11 @@ describe('Pop', () => {
     ['click', 'hover', 'focus'].forEach(trigger => {
       const wrapper = mount(
         <Pop content={content()} trigger={trigger} position="bottom-center">
-          {trigger !== 'focus'
-            ? <Button onClick={addClick}>
-                {trigger}
-              </Button>
-            : <input placeholder="focus" onChange={() => true} />}
+          {trigger !== 'focus' ? (
+            <Button onClick={addClick}>{trigger}</Button>
+          ) : (
+            <input placeholder="focus" onChange={() => true} />
+          )}
         </Pop>
       );
       expect(wrapper.find('Portal').length).toBe(0);
@@ -56,13 +56,15 @@ describe('Pop', () => {
   });
 
   it('Position prop of Pop have type-check and default with TopCenter', () => {
+    let wrapper;
     expect(() => {
-      mount(
+      wrapper = mount(
         <Pop content={content()} trigger={'click'}>
           <Button onClick={addClick}>click</Button>
         </Pop>
       );
     }).not.toThrow();
+    expect(wrapper.prop('position')).toBe('top-center');
   });
 
   it('Pop can have custom prefix, className, and block switch, meanwhile content and header pass through prop', () => {
@@ -322,5 +324,22 @@ describe('Pop', () => {
     const instance = wrapper.instance();
     wrapper.unmount();
     expect(instance.isUnmounted).toBe(true);
+  });
+
+  it('has adjustPosition and getWrappedPopover method', () => {
+    let wrapper = mount(
+      <Pop
+        content={content()}
+        trigger={'click'}
+        className="bar11"
+        block
+        header={header()}
+      >
+        <Button>click</Button>
+      </Pop>
+    );
+    expect(() => wrapper.instance().adjustPosition()).not.toThrow();
+    expect(() => wrapper.instance().getWrappedPopover()).not.toThrow();
+    wrapper.unmount();
   });
 });

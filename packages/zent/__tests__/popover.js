@@ -68,20 +68,26 @@ describe('Popover', () => {
     ).toBe('line two');
 
     // HACK: branch window.resize (throttle)
-    wrapper.find('PopoverContent').getNode().onWindowResize(
-      {},
-      {
-        deltaX: 0,
-        deltaY: 0
-      }
-    );
-    wrapper.find('PopoverContent').getNode().onWindowResize(
-      {},
-      {
-        deltaX: 10,
-        deltaY: 10
-      }
-    );
+    wrapper
+      .find('PopoverContent')
+      .getNode()
+      .onWindowResize(
+        {},
+        {
+          deltaX: 0,
+          deltaY: 0
+        }
+      );
+    wrapper
+      .find('PopoverContent')
+      .getNode()
+      .onWindowResize(
+        {},
+        {
+          deltaX: 10,
+          deltaY: 10
+        }
+      );
 
     simulateWithTimers(wrapper.find('button'), 'click');
     expect(wrapper.find('Portal').length).toBe(1);
@@ -740,5 +746,18 @@ describe('Popover', () => {
       }
     });
     expect(trigger.isOutsideSelf()).toBe(false);
+  });
+
+  it('has adjustPosition method', () => {
+    const wrapper = mount(
+      <Popover position={Popover.Position.BottomLeft} display="inline">
+        <PopoverClickTrigger>abc</PopoverClickTrigger>
+        <PopoverContent>
+          <div>popover content</div>
+        </PopoverContent>
+      </Popover>
+    );
+
+    expect(() => wrapper.getNode().adjustPosition()).not.toThrow();
   });
 });

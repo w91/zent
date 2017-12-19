@@ -3,20 +3,19 @@
  */
 
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import Button from 'button';
 import Input from 'input';
 import Notify from 'notify';
-import isPromise from 'utils/isPromise';
-
+import HTML5Backend from 'react-dnd-html5-backend';
+import { DragDropContextProvider } from 'react-dnd';
 import FileInput from './FileInput';
 import uploadLocalImage from './UploadLocal';
-import { formatMaxSize } from '../utils';
+import UploadImageItem from './UploadImageItem';
+import { formatFileSize } from '../utils';
 
 const BUTTON_LOADING_TEXT = '提取中...';
 const BUTTON_TEXT = '提取';
-
-const ArrayForEach = Array.prototype.forEach;
-const arraySlice = Array.prototype.slice;
 
 class UploadPopup extends Component {
   constructor(props) {
@@ -31,7 +30,6 @@ class UploadPopup extends Component {
     this.networkUrl = '';
     this.confirmNetworkUrl = this.confirmNetworkUrl.bind(this);
     this.networkUrlChanged = this.networkUrlChanged.bind(this);
-    this.processFiles = this.processFiles.bind(this);
     this.uploadLocalImages = this.uploadLocalImages.bind(this);
     this.fileProgressHandler = this.fileProgressHandler.bind(this);
   }
@@ -69,56 +67,94 @@ class UploadPopup extends Component {
     );
   }
 
-  /**
-   * 本地图片
-   */
-  renderLocalImageRegion(props) {
-    let { prefix, accept, options } = props;
+  // 上传图片列表
+  renderLocalImage(item, index) {
+    return (
+      <UploadImageItem
+        key={index}
+        {...item}
+        index={index}
+        isDragable
+        isInline
+        onMove={this.handleMove}
+        onDelete={this.handleDelete}
+      />
+    );
+  }
 
+  // 上传语音列表
+  renderLocalVoice(item, index) {
+    return (
+      <li key={index} className="upload-local-voice-item voice-item">
+        <div className="voice-icon" />
+        <div className="voice-name">{item.file.name}</div>
+        <div className="voice-createtime">{formatFileSize(item.file.size)}</div>
+        <span
+          className="close-modal small"
+          onClick={this.handleDelete.bind(this, index)}
+        >
+          ×
+        </span>
+        {item.progress ? (
+          <div className="voice-progress">{`${item.progress.toFixed(1)}%`}</div>
+        ) : (
+          ''
+        )}
+      </li>
+    );
+  }
+
+  listWrapper = node => {
+    return this.context.dragDropManager ? (
+      node
+    ) : (
+      <DragDropContextProvider backend={HTML5Backend}>
+        {node}
+      </DragDropContextProvider>
+    );
+  };
+
+  /**
+   * 本地上传图片、语音
+   */
+  renderLocalUploadRegion(props) {
+    let { prefix, accept, options } = props;
     let { localFiles } = this.state;
 
     return (
-      <div className={`${prefix}-local-image-region`}>
-        <div className={`${prefix}-title`}>本地图片：</div>
+      <div className={`${prefix}-local-attachment-region`}>
+        <div className={`${prefix}-title`}>
+          本地{options.type === 'voice' ? '语音' : '图片'}：
+        </div>
         <div className={`${prefix}-content`}>
-          <div>
-            <ul className="image-list upload-local-image-list ui-sortable">
-              {localFiles.map((item, index) => {
-                return (
-                  <li key={index} className="upload-local-image-item">
-                    <div
-                      className="image-box"
-                      style={{
-                        backgroundImage: `url(${item.src})`
-                      }}
-                    />
-                    <span
-                      className="close-modal small"
-                      onClick={this.removeLocalImage.bind(this, item)}
-                    >
-                      ×
-                    </span>
-                    {item.progress
-                      ? <div className="image-progress">{`${item.progress.toFixed(
-                          1
-                        )}%`}</div>
-                      : ''}
-                  </li>
-                );
-              })}
+          {this.listWrapper(
+            <ul
+              className={`${options.type}-list upload-local-${options.type}-list`}
+            >
+              {localFiles.map(
+                (item, index) =>
+                  options.type === 'voice'
+                    ? this.renderLocalVoice(item, index)
+                    : this.renderLocalImage(item, index)
+              )}
             </ul>
-          </div>
-          {!options.maxAmount || localFiles.length < options.maxAmount
-            ? <div className={`${prefix}-add-local-image-button pull-left`}>
-                +
-                <FileInput {...props.options} onChange={this.processFiles} />
-              </div>
-            : ''}
+          )}
+          {!options.maxAmount || localFiles.length < options.maxAmount ? (
+            <div className={`${prefix}-add-local-image-button pull-left`}>
+              +
+              <FileInput
+                {...props.options}
+                accept={accept}
+                onChange={this.handleChange}
+              />
+            </div>
+          ) : (
+            ''
+          )}
           <div className={`${prefix}-local-tips c-gray`}>
-            仅支持
-            {accept.replace(/image\/?/g, '').replace(/, /g, '、')}
-            三种格式, 大小不超过
-            {formatMaxSize(options.maxSize)}
+            仅支持{`${accept
+              .replace(/image\/?|audio\/?/g, '')
+              .replace(/, ?/g, '、')} ${accept.split(',').length}`}种格式, 大小不超过{formatFileSize(options.maxSize)}
           </div>
         </div>
       </div>
@@ -142,13 +178,21 @@ class UploadPopup extends Component {
     );
   }
 
-  removeLocalImage(index) {
+  handleMove = (fromIndex, toIndex) => {
+    let { localFiles } = this.state;
+    const result = Array.from(localFiles);
+    const [removed] = result.splice(fromIndex, 1);
+    result.splice(toIndex, 0, removed);
+    this.setState({ localFiles: result });
+  };
+
+  handleDelete = index => {
     let { localFiles } = this.state;
     localFiles.splice(index, 1);
     this.setState({
       localFiles
     });
-  }
+  };
 
   uploadLocalImages() {
     let { options, showUploadPopup } = this.props;
@@ -162,7 +206,6 @@ class UploadPopup extends Component {
     })
       .then(() => {
         this.setState({
-          localFiles: [],
           localUploading: false
         });
         showUploadPopup(false);
@@ -180,8 +223,10 @@ class UploadPopup extends Component {
     return (
       <div className={className}>
         <div className={`${prefix}-container`}>
-          {!options.localOnly && this.renderNetworkRegion(this.props)}
-          {this.renderLocalImageRegion(this.props)}
+          {!options.localOnly &&
+            options.type !== 'voice' &&
+            this.renderNetworkRegion(this.props)}
+          {this.renderLocalUploadRegion(this.props)}
         </div>
         {this.renderFooterRegion()}
       </div>
@@ -192,59 +237,18 @@ class UploadPopup extends Component {
     this.networkUrl = evt.target.value;
   }
 
-  iteratorFiles(files) {
-    const { options } = this.props;
-    const { maxSize, silent, maxAmount } = options;
-
-    ArrayForEach.call(files, (file, index) => {
-      if (maxAmount && index >= maxAmount) {
-        !silent && Notify.error(`已经自动过滤超过${options.maxAmount}张的图片文件`);
-        return false;
-      }
-      if (!maxSize || file.size <= maxSize) {
-        this.addFile(file);
-      } else {
-        !silent && Notify.error(`已经自动过滤大于${formatMaxSize(maxSize)}的图片文件`);
-      }
-    });
-  }
-
-  processFiles(evt) {
-    const { options } = this.props;
-    let files = arraySlice.call(evt.target.files);
-    this.uploadFiles = files;
-
-    let filterResult = options.filterFiles(files);
-    if (isPromise(filterResult)) {
-      filterResult.then(this.iteratorFiles, options.onError);
-    } else {
-      files = filterResult;
-      this.iteratorFiles(files);
-    }
-  }
-
-  fileProgressHandler(index, progress) {
+  fileProgressHandler(progress, index) {
     let { localFiles } = this.state;
     localFiles[index].progress = progress;
     this.setState(localFiles);
   }
 
-  addFile(file) {
-    let fileReader = new FileReader();
+  handleChange = files => {
     let { localFiles } = this.state;
-
-    fileReader.onload = e => {
-      localFiles.push({
-        src: e.target.result,
-        file
-      });
-      this.setState({
-        localFiles
-      });
-    };
-
-    fileReader.readAsDataURL(file);
-  }
+    this.setState({
+      localFiles: localFiles.concat(files)
+    });
+  };
 
   /**
    * 提取网络图片
@@ -274,6 +278,10 @@ class UploadPopup extends Component {
       }
     );
   }
+
+  static contextTypes = {
+    dragDropManager: PropTypes.object
+  };
 }
 
 UploadPopup.defaultProps = {

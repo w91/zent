@@ -1,8 +1,9 @@
 import React, { Component, PureComponent } from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
+import isString from 'lodash/isString';
 
-import { noop } from './constants/';
+import { commonProps, commonPropTypes } from './constants/';
 import DatePicker from './DatePicker';
 
 // type
@@ -10,39 +11,26 @@ const START = 'start';
 const END = 'end';
 
 class SplitDateRangePicker extends (PureComponent || Component) {
-  static PropTypes = {
-    className: PropTypes.string,
-    prefix: PropTypes.string,
-    placeholder: PropTypes.arrayOf(PropTypes.string),
-    confirmText: PropTypes.string,
-    valueType: PropTypes.oneOf(['date', 'number', 'string']),
-    format: PropTypes.string,
-    defaultTime: PropTypes.string,
+  static propTypes = {
+    ...commonPropTypes,
     showTime: PropTypes.bool,
-    disabledDate: PropTypes.func,
-    onChange: PropTypes.func,
-    onClick: PropTypes.func,
-    onOpen: PropTypes.func,
-    onClose: PropTypes.func
+    placeholder: PropTypes.array,
+    defaultTime: PropTypes.arrayOf(PropTypes.string)
   };
 
   static defaultProps = {
-    className: '',
-    prefix: 'zent',
+    ...commonProps,
     placeholder: ['开始日期', '结束日期'],
-    confirmText: '确定',
     format: 'YYYY-MM-DD',
-    showTime: false,
     value: [],
     openPanel: [],
-    disabledDate: noop,
-    onChange: noop
+    defaultTime: ['00:00:00', '00:00:00']
   };
 
   onChange = type => {
     return val => {
       const { onChange, value } = this.props;
-      const ret = value.slice();
+      const ret = value ? value.slice() : [];
 
       if (type === START) {
         ret.length === 2 ? ret.splice(0, 1, val) : ret.splice(0, 1, val, '');
@@ -54,8 +42,6 @@ class SplitDateRangePicker extends (PureComponent || Component) {
   };
 
   renderPicker() {
-    const props = this.props;
-
     const {
       value,
       placeholder,
@@ -66,35 +52,43 @@ class SplitDateRangePicker extends (PureComponent || Component) {
       openPanel,
       onChange,
       disabledDate,
+      defaultTime,
       ...pickerProps
-    } = props;
+    } = this.props;
     let rangePicker;
-
+    // 兼容老 api ，支持传入字符串
+    const timeArr = isString(defaultTime)
+      ? [defaultTime, defaultTime]
+      : defaultTime;
     const pickerCls = classNames('range-picker2');
 
     rangePicker = (
       <div className={pickerCls}>
         <DatePicker
           {...pickerProps}
+          openPanel={openPanel[0]}
           placeholder={placeholder[0]}
-          value={props.value[0]}
+          max={value[1] || pickerProps.max}
+          defaultTime={timeArr[0]}
+          value={value[0]}
           onClick={val => onClick && onClick(val, START)}
-          onChange={this.onChange(START)}
           onOpen={() => onOpen && onOpen(START)}
           onClose={() => onClose && onClose(START)}
-          openPanel={openPanel[0]}
+          onChange={this.onChange(START)}
           disabledDate={val => disabledDate(val, START)}
         />
         <span className="picker-seperator">至</span>
         <DatePicker
           {...pickerProps}
+          openPanel={openPanel[1]}
           placeholder={placeholder[1]}
-          value={props.value[1]}
+          min={value[0] || pickerProps.min}
+          defaultTime={timeArr[1]}
+          value={value[1]}
           onClick={val => onClick && onClick(val, END)}
-          onChange={this.onChange(END)}
           onOpen={() => onOpen && onOpen(END)}
           onClose={() => onClose && onClose(END)}
-          openPanel={openPanel[1]}
+          onChange={this.onChange(END)}
           disabledDate={val => disabledDate(val, END)}
         />
       </div>
@@ -107,11 +101,7 @@ class SplitDateRangePicker extends (PureComponent || Component) {
     const props = this.props;
     const prefixCls = `${props.prefix}-datetime-picker ${props.className}`;
 
-    return (
-      <div className={prefixCls}>
-        {this.renderPicker()}
-      </div>
-    );
+    return <div className={prefixCls}>{this.renderPicker()}</div>;
   }
 }
 

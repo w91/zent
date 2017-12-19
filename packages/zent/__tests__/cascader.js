@@ -26,7 +26,10 @@ describe('Cascader', () => {
   it('can have custom placeholder', () => {
     const wrapper = mount(<Cascader placeholder="hold on" />);
     expect(
-      wrapper.find('.zent-cascader__select-text').find('span').text()
+      wrapper
+        .find('.zent-cascader__select-text')
+        .find('span')
+        .text()
     ).toBe('hold on');
   });
 
@@ -71,10 +74,16 @@ describe('Cascader', () => {
         ]
       }
     ];
+    const title = ['省份', '城市', '县区'];
 
-    const wrapper = mount(<Cascader value={value} options={options} />);
+    const wrapper = mount(
+      <Cascader value={value} options={options} title={title} />
+    );
     expect(
-      wrapper.find('.zent-cascader__select-text').find('span').text()
+      wrapper
+        .find('.zent-cascader__select-text')
+        .find('span')
+        .text()
     ).toBe('root / anotherSon / anotherGrandSon');
 
     wrapper.find('.zent-cascader__select').simulate('click');
@@ -130,9 +139,17 @@ describe('Cascader', () => {
 
     const pop = new ReactWrapper(wrapper.instance().cascader, true);
     expect(pop.find('.zent-cascader__list-link').length).toBe(1);
-    expect(pop.find('.zent-cascader__list-link').at(0).text()).toBe('root');
+    expect(
+      pop
+        .find('.zent-cascader__list-link')
+        .at(0)
+        .text()
+    ).toBe('root');
 
-    pop.find('.zent-cascader__list-link').at(0).simulate('click');
+    pop
+      .find('.zent-cascader__list-link')
+      .at(0)
+      .simulate('click');
     jest.runAllTimers();
 
     dispatchWithTimers(window, new MouseEvent('click'));
@@ -188,10 +205,16 @@ describe('Cascader', () => {
 
     const pop = new ReactWrapper(wrapper.instance().cascader, true);
 
-    pop.find('.zent-cascader__list-link').at(0).simulate('click');
+    pop
+      .find('.zent-cascader__list-link')
+      .at(0)
+      .simulate('click');
     jest.runAllTimers();
     expect(
-      wrapper.find('.zent-cascader__select-text').find('span').text()
+      wrapper
+        .find('.zent-cascader__select-text')
+        .find('span')
+        .text()
     ).toBe('root');
     expect(onChangeMock.mock.calls.length).toBe(1);
 
@@ -234,7 +257,10 @@ describe('Cascader', () => {
 
     const pop = new ReactWrapper(wrapper.instance().cascader, true);
 
-    pop.find('.zent-cascader__list-link').at(0).simulate('click');
+    pop
+      .find('.zent-cascader__list-link')
+      .at(0)
+      .simulate('click');
     jest.runAllTimers();
 
     dispatchWithTimers(window, new MouseEvent('click'));

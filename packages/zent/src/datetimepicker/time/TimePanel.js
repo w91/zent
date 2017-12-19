@@ -1,7 +1,7 @@
 import React, { Component, PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import { padLeft } from '../utils';
+import { padLeft, isSameDate } from '../utils';
 import HourPanel from './HourPanel';
 import MinutePanel from './MinutePanel';
 import SecondPanel from './SecondPanel';
@@ -12,12 +12,16 @@ const stateMap = {
   second: 'openSecond'
 };
 
+const disabledMap = {
+  hour: 'disabledHour',
+  minute: 'disabledMinute',
+  second: 'disabledSecond'
+};
+
 export default class TimePanel extends (PureComponent || Component) {
   static propTypes = {
     onChange: PropTypes.func,
-    actived: PropTypes.instanceOf(Date),
-    onOpen: PropTypes.func,
-    onClose: PropTypes.func
+    actived: PropTypes.instanceOf(Date)
   };
 
   state = {
@@ -25,12 +29,6 @@ export default class TimePanel extends (PureComponent || Component) {
     openMinute: false,
     openSecond: false
   };
-
-  componentWillReceiveProps(next) {
-    if (next.hidePanel) {
-      this.hideAllPanel();
-    }
-  }
 
   onSelectTime(type) {
     return val => {
@@ -45,8 +43,6 @@ export default class TimePanel extends (PureComponent || Component) {
       this.setState({
         [key]: true
       });
-
-      this.props.onOpen && this.props.onOpen();
     };
   };
 
@@ -56,46 +52,66 @@ export default class TimePanel extends (PureComponent || Component) {
       this.setState({
         [key]: false
       });
-
-      this.props.onClose && this.props.onClose();
     };
   };
 
-  hideAllPanel() {
-    this.setState({
-      openHour: false,
-      openMinute: false,
-      openSecond: false
-    });
-  }
+  isDisabled = type => {
+    const { disabledTime, min, max, actived } = this.props;
+    let fns;
+    if (disabledTime) {
+      return disabledTime[disabledMap[type]];
+    } else if (min && isSameDate(min, actived)) {
+      fns = {
+        hour: val => val < min.getHours(),
+        minute: val =>
+          actived.getHours() === min.getHours() && val < min.getMinutes(),
+        second: val =>
+          actived.getHours() === min.getHours() &&
+          actived.getMinutes() === min.getMinutes() &&
+          val < min.getSeconds()
+      };
+      return fns[type];
+    } else if (max && isSameDate(max, actived)) {
+      fns = {
+        hour: val => val > max.getHours(),
+        minute: val => val > max.getMinutes(),
+        second: val => val > max.getSeconds()
+      };
+      return fns[type];
+    }
+  };
 
   render() {
-    const { openHour, openMinute, openSecond } = this.state;
-    const { actived, disabledTime } = this.props;
+    const { state, props } = this;
+    const { openHour, openMinute, openSecond } = state;
+    const { actived } = props;
 
     return (
       <div className="time-panel">
-        {openHour &&
+        {openHour && (
           <HourPanel
             selected={actived}
-            disabledHour={disabledTime && disabledTime.disabledHour}
+            isDisabled={this.isDisabled('hour')}
             onSelect={this.onSelectTime('hour')}
             hidePanel={this.hidePanel('hour')}
-          />}
-        {openMinute &&
+          />
+        )}
+        {openMinute && (
           <MinutePanel
             selected={actived}
-            disabledMinute={disabledTime && disabledTime.disabledMinute}
+            isDisabled={this.isDisabled('minute')}
             onSelect={this.onSelectTime('minute')}
             hidePanel={this.hidePanel('minute')}
-          />}
-        {openSecond &&
+          />
+        )}
+        {openSecond && (
           <SecondPanel
             selected={actived}
-            disabledSecond={disabledTime && disabledTime.disabledSecond}
+            isDisabled={this.isDisabled('second')}
             onSelect={this.onSelectTime('second')}
             hidePanel={this.hidePanel('second')}
-          />}
+          />
+        )}
 
         <div className="time-panel__preview">
           <span className="time__number" onClick={this.openPanel('hour')}>

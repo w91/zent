@@ -5,55 +5,84 @@ import {
   Switch,
   Redirect
 } from 'react-router-dom';
-import PageHeader from 'components/PageHeader';
-import PageFooter from 'components/PageFooter';
-import SideNav from 'components/SideNav';
-import FooterNav from 'components/FooterNav';
-import ScrollToTop from 'components/ScrollToTop';
+import ScrollToTop from './components/ScrollToTop';
 
 import packageJson from '../../packages/zent/package.json';
-import navData from './nav.config';
+import navData from './nav';
 import { registerRoute, registerFooter } from './router.config';
 import { prefix } from './constants';
+import CNWrapper from './components/CNWrapper';
+import USWrapper from './components/USWrapper';
 
 // one-dimentional array
-const routeData = registerRoute(navData['zh-CN']);
+// 第二个参数作为处理路由分块的夹层暂时存在，后续会修复。
+const routeData = {
+  'zh-CN': registerRoute(navData['zh-CN'], '/zh'),
+  'en-US': registerRoute(navData['en-US'], '/en')
+};
 
 // double-linked list
-const footerData = registerFooter(routeData);
+const footerData = {
+  'zh-CN': registerFooter(routeData['zh-CN']),
+  'en-US': registerFooter(routeData['en-US'])
+};
 
 export default class App extends Component {
-  render() {
-    return (
-      <Router>
-        <ScrollToTop>
-          <PageHeader version={packageJson.version} />
-          <div className="main-content">
-            <div className="page-container clearfix">
-              <SideNav data={navData['zh-CN']} base={prefix} />
-              <div className="page-content">
-                <div className="react-doc-page-content">
-                  <Switch>
-                    {routeData.map((data, index) => {
-                      return (
-                        <Route
-                          key={`route-${index}`}
-                          component={data.component}
-                          path={data.path}
-                        />
-                      );
-                    })}
+  state = {
+    i18n: 'zh-CN'
+  };
 
-                    <Redirect from="*" to={routeData[0].path} />
-                  </Switch>
-                </div>
-                <FooterNav data={footerData} />
-              </div>
-            </div>
-          </div>
-          <PageFooter />
+  changeI18N = target => {
+    this.setState({
+      i18n: target
+    });
+  };
+
+  render() {
+    const { i18n } = this.state;
+    const passthrough = i18nStr => ({
+      // 奥利奥，路由路径中的夹层。
+      oreo: `/${i18nStr.split('-')[0]}`,
+      version: packageJson.version,
+      sideNavData: navData[i18nStr],
+      footerData: footerData[i18nStr],
+      sideNavRef: this.saveSideNav,
+      saveFooter: this.saveFooter,
+      changeI18N: this.changeI18N,
+      prefix,
+      i18n
+    });
+
+    // 通过 basename 控制前缀，不要放到每一层路由里去
+    return (
+      <Router key={module.hot ? Math.random() : null} basename={prefix}>
+        <ScrollToTop>
+          <Switch>
+            <Route
+              path="/zh"
+              render={() => (
+                <CNWrapper pass={passthrough('zh-CN')}>
+                  <Switch>{routeData['zh-CN'].map(renderRouter)}</Switch>
+                </CNWrapper>
+              )}
+            />
+            <Route
+              path="/en"
+              render={() => (
+                <USWrapper pass={passthrough('en-US')}>
+                  <Switch>{routeData['en-US'].map(renderRouter)}</Switch>
+                </USWrapper>
+              )}
+            />
+            <Redirect from="*" to={routeData['zh-CN'][0].path} />
+          </Switch>
         </ScrollToTop>
       </Router>
     );
   }
+}
+
+function renderRouter(data) {
+  const { source, path } = data;
+  return <Route key={`route-${path}`} component={source} path={path} />;
 }

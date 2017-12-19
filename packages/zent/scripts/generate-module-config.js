@@ -19,8 +19,10 @@ function main() {
     expandedDependencyGraph,
     cssConfig
   );
+  prependBaseCssToMapping(cssMapping);
   const jsMapping = generateModuleJSMapping();
   const mapping = mergeJSAndCSS(jsMapping, cssMapping);
+  appendPostcssToMapping(mapping);
 
   writeJSONToFile(mapping, '../lib/module-mapping.json');
 }
@@ -154,12 +156,32 @@ function expandDenpendencies(mod, graph) {
 
   while (queue.length) {
     const d = queue.shift();
-    dependencies.push(d);
+    dependencies.unshift(d);
     const nextLevelDependency = graph[d];
     queue.splice(queue.length, 0, ...nextLevelDependency);
   }
 
   return uniq(dependencies);
+}
+
+function appendPostcssToMapping(mapping) {
+  Object.keys(mapping).forEach(componentName => {
+    const config = mapping[componentName];
+    const { css } = config;
+
+    config.postcss = css.map(cssPath =>
+      cssPath.replace(/\/css\/(.+)\.css$/, '/assets/$1.pcss')
+    );
+  });
+
+  return mapping;
+}
+
+function prependBaseCssToMapping(cssMapping) {
+  Object.keys(cssMapping).forEach(compName => {
+    cssMapping[compName].unshift('zent/css/base.css');
+  });
+  return cssMapping;
 }
 
 // Utilities

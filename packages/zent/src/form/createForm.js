@@ -7,10 +7,17 @@ import noop from 'lodash/noop';
 import assign from 'lodash/assign';
 import isEqual from 'lodash/isEqual';
 import some from 'lodash/some';
+import get from 'lodash/get';
+import map from 'lodash/map';
 import isPromise from 'utils/isPromise';
 import PropTypes from 'prop-types';
 
-import { getDisplayName, silenceEvent, silenceEvents } from './utils';
+import {
+  getDisplayName,
+  silenceEvent,
+  silenceEvents,
+  srcollToFirstError
+} from './utils';
 import rules from './validationRules';
 import handleSubmit from './handleSubmit';
 
@@ -24,7 +31,13 @@ const checkSubmit = submit => {
   return submit;
 };
 const createForm = (config = {}) => {
-  const { formValidations } = config;
+  const {
+    formValidations,
+    onChange,
+    onSubmitSuccess,
+    onSubmitFail,
+    scrollToError
+  } = config;
   const validationRules = assign({}, rules, formValidations);
 
   return WrappedForm => {
@@ -49,17 +62,19 @@ const createForm = (config = {}) => {
         onValid: PropTypes.func,
         onInvalid: PropTypes.func,
         onChange: PropTypes.func,
-        validationErrors: PropTypes.object
+        validationErrors: PropTypes.object,
+        scrollToError: PropTypes.bool
       };
 
       static defaultProps = {
         onSubmit: noop,
-        onSubmitSuccess: noop,
-        onSubmitFail: noop,
+        onSubmitSuccess: onSubmitSuccess || noop,
+        onSubmitFail: onSubmitFail || noop,
         onValid: noop,
         onInvalid: noop,
-        onChange: noop,
-        validationErrors: null
+        onChange: onChange || noop,
+        validationErrors: null,
+        scrollToError: scrollToError || false
       };
 
       static childContextTypes = {
@@ -78,9 +93,12 @@ const createForm = (config = {}) => {
             isValidValue: this.isValidValue,
             setFieldExternalErrors: this.setFieldExternalErrors,
             resetFieldsValue: this.resetFieldsValue,
+            setFormDirty: this.setFormDirty,
             setFormPristine: this.setFormPristine,
             isValid: this.isValid,
-            isSubmitting: this.isSubmitting
+            isSubmitting: this.isSubmitting,
+            validateForm: this.validateForm,
+            asyncValidateForm: this.asyncValidateForm
           }
         };
       }
@@ -91,7 +109,7 @@ const createForm = (config = {}) => {
       }
 
       componentWillUpdate() {
-        this.prevFieldNames = this.fields.map(field => field.props.name);
+        this.prevFieldNames = this.fields.map(field => field.getName());
       }
 
       componentDidUpdate() {
@@ -104,7 +122,7 @@ const createForm = (config = {}) => {
           this.setFieldValidationErrors(validationErrors);
         }
 
-        const newFieldNames = this.fields.map(field => field.props.name);
+        const newFieldNames = this.fields.map(field => field.getName());
         if (!isEqual(this.prevFieldNames, newFieldNames)) {
           this.validateForm();
         }
@@ -162,82 +180,108 @@ const createForm = (config = {}) => {
         return this.state.isFormValid;
       };
 
-      setFieldValidationErrors = (errors, updatePristine = true) => {
+      setFieldValidationErrors = (errors, updateDirty = true) => {
         this.fields.forEach(field => {
-          const name = field.props.name;
+          const name = field.getName();
           const data = {
             _isValid: !(name in errors),
             _validationError:
               typeof errors[name] === 'string' ? [errors[name]] : errors[name]
           };
-          if (updatePristine) {
-            data._isPristine = false;
+          if (updateDirty) {
+            data._isDirty = true;
           }
           field.setState(data);
         });
       };
 
       // 设置服务端返回的错误信息
-      setFieldExternalErrors = (errors, updatePristine = true) => {
-        Object.keys(errors).forEach(name => {
-          const field = find(
-            this.fields,
-            component => component.props.name === name
-          );
-          if (!field) {
-            throw new Error(`field ${name} does not exits`);
-          }
-
+      setFieldExternalErrors = (errors, updateDirty = true) => {
+        this.fields.forEach(field => {
+          const name = field.getName();
+          const error = get(errors, name);
           const data = {
             _isValid: false,
-            _externalError:
-              typeof errors[name] === 'string' ? [errors[name]] : errors[name]
+            _externalError: typeof error === 'string' ? [error] : error
           };
-          if (updatePristine) {
-            data._isPristine = false;
+          if (updateDirty) {
+            data._isDirty = true;
           }
           field.setState(data);
         });
+        // 滚动到第一个错误处
+        this.props.scrollToError && srcollToFirstError(this.fields);
       };
 
-      setFormPristine = isPristine => {
+      setFormDirty = (isDirty = true) => {
         this.fields.forEach(field => {
           field.setState({
-            _isPristine: isPristine
+            _isDirty: isDirty
           });
+        });
+      };
+
+      setFormPristine = (isPristine = false) => {
+        this.fields.forEach(field => {
+          field.setState({
+            _isDirty: !isPristine
+          });
+        });
+      };
+
+      initialize = data => {
+        this.fields.forEach(field => {
+          const name = field.getName();
+          const value = get(data, name);
+          if (value !== undefined) {
+            field.setInitialValue(value);
+          } else {
+            field.setInitialValue();
+          }
         });
       };
 
       resetFieldsValue = data => {
         this.fields.forEach(field => {
-          const name = field.props.name;
-          if (data && data.hasOwnProperty(name)) {
-            field.setValue(data[name]);
+          const name = field.getName();
+          const value = get(data, name);
+          if (value !== undefined) {
+            field.setValue(value);
           } else {
             field.resetValue();
           }
         });
       };
 
+      setFieldsValue = data => {
+        this.fields.forEach(field => {
+          const name = field.getName();
+          const value = get(data, name);
+          if (value !== undefined) {
+            field.setValue(value);
+          }
+        });
+      };
+
       reset = data => {
-        this.setFormPristine(true);
+        this.setFormDirty(false);
         this.resetFieldsValue(data);
       };
 
-      isFieldTouched = name => {
+      isFieldDirty = name => {
         const field = find(
           this.fields,
-          component => component.props.name === name
+          component => component.getName() === name
         );
 
         if (!field) return false;
-        return !field.isPristine();
+        return field.isDirty();
       };
 
       isFieldValidating = name => {
         const field = find(
           this.fields,
-          component => component.props.name === name
+          component => component.getName() === name
         );
 
         if (!field) return false;
@@ -247,7 +291,7 @@ const createForm = (config = {}) => {
       getFieldError = name => {
         const field = find(
           this.fields,
-          component => component.props.name === name
+          component => component.getName() === name
         );
 
         if (!field) return '';
@@ -255,31 +299,70 @@ const createForm = (config = {}) => {
       };
 
       getFormValues = () => {
+        const assignValue = (values, keyPath, newValue) => {
+          if (keyPath.length === 0) {
+            return;
+          }
+          let currentKey = keyPath[0];
+          if (/\[\d+\]/.test(currentKey)) {
+            // array
+            let index = currentKey.match(/\d+(?=\])/)[0];
+            currentKey = currentKey.replace(/\[\d+\]/, '');
+            if (!values[currentKey]) {
+              values[currentKey] = [];
+            }
+            if (keyPath.length > 1) {
+              index > values[currentKey].length - 1
+                ? (values[currentKey][index] = {})
+                : null;
+              assignValue(
+                values[currentKey][index],
+                keyPath.slice(1),
+                newValue
+              );
+            } else {
+              values[currentKey][index] = newValue;
+            }
+          } else {
+            // object
+            if (!values[currentKey]) {
+              values[currentKey] = {};
+            }
+            if (keyPath.length > 1) {
+              assignValue(values[currentKey], keyPath.slice(1), newValue);
+            } else {
+              values[currentKey] = newValue;
+            }
+          }
+        };
+
         return this.fields.reduce((values, field) => {
-          const name = field.props.name;
-          values[name] = field.getValue();
+          const name = field.getName();
+          const fieldValue = field.getValue();
+          const fieldNamePath = name.split('.');
+          assignValue(values, fieldNamePath, fieldValue);
           return values;
         }, {});
       };
 
       getValidationErrors = () => {
         return this.fields.reduce((errors, field) => {
-          const name = field.props.name;
+          const name = field.getName();
           errors[name] = field.getErrorMessage();
           return errors;
         }, {});
       };
 
-      getPristineValues = () => {
+      getInitialValues = () => {
         return this.fields.reduce((values, field) => {
-          const name = field.props.name;
-          values[name] = field.getPristineValue();
+          const name = field.getName();
+          values[name] = field.getInitialValue();
           return values;
         }, {});
       };
 
       isChanged = () => {
-        return !isEqual(this.getPristineValues(), this.getFormValues());
+        return !isEqual(this.getInitialValues(), this.getFormValues());
       };
 
       isValidating = () => {
@@ -304,7 +387,7 @@ const createForm = (config = {}) => {
         );
         const isValid =
           !validationResults.failed.length &&
-          !(formValidationErrors && formValidationErrors[field.props.name]);
+          !(formValidationErrors && formValidationErrors[field.getName()]);
 
         return {
           isValid,
@@ -373,7 +456,7 @@ const createForm = (config = {}) => {
               value
             );
             updateResults(validation, validationMethod);
-          } else if (typeof validations[validationMethod] !== 'function') {
+          } else {
             const validation = validationRules[validationMethod](
               currentValues,
               value,
@@ -408,7 +491,7 @@ const createForm = (config = {}) => {
         const { asyncValidation } = field.props;
         const values = this.getFormValues();
 
-        if (field.state._validationError.length) return;
+        if (!asyncValidation || field.state._validationError.length) return;
 
         field.setState({
           _isValidating: true
@@ -422,29 +505,55 @@ const createForm = (config = {}) => {
         const handleResult = rejected => error => {
           field.setState({
             _isValidating: false,
-            _isValid: !rejected,
-            _externalError: error ? [error] : null
+            _isValid: !rejected && field.state._validationError.length === 0,
+            _externalError: error ? [error] : null,
+            _asyncValidated: true
           });
 
           if (rejected) {
             this.setState({
               isFormValid: false
             });
+            throw new Error(error);
           }
         };
 
         return promise.then(handleResult(false), handleResult(true));
       };
 
-      validateForm = () => {
+      isFormAsyncValidated = () => {
+        const allIsAsyncValid = this.fields.every(field => {
+          return field.isAsyncValidated() || !field.props.asyncValidation;
+        });
+
+        return allIsAsyncValid;
+      };
+
+      asyncValidateForm = (resolve, reject) => {
+        const asyncValidations = map(this.fields, field => {
+          return this.asyncValidate(field, field.getValue());
+        });
+        Promise.all(asyncValidations)
+          .then(() => {
+            resolve && resolve();
+          })
+          .catch(error => {
+            reject && reject(error);
+          });
+      };
+
+      validateForm = (forceValidate = false, callback) => {
         const onValidationComplete = () => {
           const allIsValid = this.fields.every(field => {
             return field.isValid();
           });
 
-          this.setState({
-            isFormValid: allIsValid
-          });
+          this.setState(
+            {
+              isFormValid: allIsValid
+            },
+            callback
+          );
 
           if (allIsValid) {
             this.props.onValid();
@@ -456,19 +565,21 @@ const createForm = (config = {}) => {
         this.fields.forEach((field, index) => {
           const { _externalError } = field.state;
           const validation = this.runValidation(field);
-          if (validation.isValid && _externalError) {
-            validation.isValid = false;
-          }
+          if (forceValidate || field.props.validateOnBlur) {
+            if (validation.isValid && _externalError) {
+              validation.isValid = false;
+            }
 
-          field.setState(
-            {
-              _isValid: validation.isValid,
-              _validationError: validation.error,
-              _externalError:
-                !validation.isValid && _externalError ? _externalError : null
-            },
-            index === this.fields.length - 1 ? onValidationComplete : null
-          );
+            field.setState(
+              {
+                _isValid: validation.isValid,
+                _validationError: validation.error,
+                _externalError:
+                  !validation.isValid && _externalError ? _externalError : null
+              },
+              index === this.fields.length - 1 ? onValidationComplete : null
+            );
+          }
         });
       };
 
@@ -510,12 +621,19 @@ const createForm = (config = {}) => {
             getFieldError: this.getFieldError,
             setFieldExternalErrors: this.setFieldExternalErrors,
             resetFieldsValue: this.resetFieldsValue,
+            setFieldsValue: this.setFieldsValue,
+            setFormDirty: this.setFormDirty,
             setFormPristine: this.setFormPristine,
-            isFieldTouched: this.isFieldTouched,
+            initialize: this.initialize,
+            isFieldDirty: this.isFieldDirty,
+            isFieldTouched: this.isFieldDirty,
             isFieldValidating: this.isFieldValidating,
             isValid: this.isValid,
             isValidating: this.isValidating,
-            isSubmitting: this.isSubmitting
+            isSubmitting: this.isSubmitting,
+            isFormAsyncValidated: this.isFormAsyncValidated,
+            validateForm: this.validateForm,
+            asyncValidateForm: this.asyncValidateForm
           }
         });
       }

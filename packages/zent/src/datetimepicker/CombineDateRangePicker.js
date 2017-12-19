@@ -1,23 +1,31 @@
 import React, { Component, PureComponent } from 'react';
+import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import Popover from 'popover';
-import PropTypes from 'prop-types';
+import formatDate from 'zan-utils/date/formatDate';
+import parseDate from 'zan-utils/date/parseDate';
 
 import DatePanel from './date/DatePanel';
 import PanelFooter from './common/PanelFooter';
 import { goMonths, isArray, isSameMonth } from './utils';
-import { formatDate, maybeParseDate, dayStart, setTime } from './utils/date';
-import { timeFnMap, noop } from './constants/';
+import { dayStart, setTime } from './utils/date';
+import {
+  timeFnMap,
+  noop,
+  popPositionMap,
+  commonProps,
+  commonPropTypes
+} from './constants/';
 
 let retType = 'string';
 
-const isValidValue = val => {
+function isValidValue(val) {
   if (!isArray(val)) return false;
   const ret = val.filter(item => !!item);
   return ret.length === 2;
-};
+}
 
-const getDateTime = (date, time) => {
+function getDateTime(date, time) {
   return new Date(
     date.getFullYear(),
     date.getMonth(),
@@ -26,10 +34,10 @@ const getDateTime = (date, time) => {
     time.getMinutes(),
     time.getSeconds()
   );
-};
+}
 
 const extractStateFromProps = props => {
-  const { format, min, max, defaultValue, defaultTime } = props;
+  const { format, defaultValue, defaultTime } = props;
   let showPlaceholder;
   let selected = [];
   let actived = [];
@@ -39,8 +47,8 @@ const extractStateFromProps = props => {
   if (isValidValue(props.value)) {
     showPlaceholder = false;
     selected = [
-      maybeParseDate(props.value[0], format),
-      maybeParseDate(props.value[1], format)
+      parseDate(props.value[0], format),
+      parseDate(props.value[1], format)
     ];
     const tmp = [setTime(selected[0]), setTime(selected[1])];
     range = tmp.slice();
@@ -54,27 +62,19 @@ const extractStateFromProps = props => {
   } else {
     showPlaceholder = true;
     value = [];
-    let start;
     if (defaultValue && isValidValue(defaultValue)) {
-      start = maybeParseDate(defaultValue[0], format);
-    } else if (min) {
-      start = maybeParseDate(min, format);
-    } else if (max) {
-      let maxDate = maybeParseDate(max, format);
-      let timestamp = maxDate && maxDate.getTime();
-      if (timestamp < Date.now()) {
-        start = goMonths(maxDate, -1);
-      }
+      actived = [
+        parseDate(defaultValue[0], format),
+        parseDate(defaultValue[1], format)
+      ];
     } else {
-      start = dayStart();
+      const start = dayStart();
+      actived = [start, goMonths(start, 1)];
     }
-    actived = [start, goMonths(start, 1)];
   }
-  if (defaultTime) {
-    actived = actived.map(item => setTime(item, defaultTime));
-    range = range.map(item => {
-      return setTime(item, defaultTime);
-    });
+  if (defaultTime && isValidValue(defaultTime)) {
+    actived = actived.map((item, idx) => setTime(item, defaultTime[idx]));
+    range = range.map((item, idx) => setTime(item, defaultTime[idx]));
   }
 
   let activedTime;
@@ -100,31 +100,17 @@ const extractStateFromProps = props => {
 
 class CombineDateRangePicker extends (PureComponent || Component) {
   static PropTypes = {
-    className: PropTypes.string,
-    prefix: PropTypes.string,
-    placeholder: PropTypes.arrayOf(PropTypes.string),
-    confirmText: PropTypes.string,
-    valueType: PropTypes.oneOf(['date', 'number', 'string']),
-    format: PropTypes.string,
-    defaultTime: PropTypes.string,
+    ...commonPropTypes,
     showTime: PropTypes.bool,
-    disabledDate: PropTypes.func,
-    onChange: PropTypes.func,
-    onClick: PropTypes.func,
-    onOpen: PropTypes.func,
-    onClose: PropTypes.func
+    placeholder: PropTypes.array,
+    defaultTime: PropTypes.arrayOf(PropTypes.string)
   };
 
   static defaultProps = {
-    className: '',
-    prefix: 'zent',
+    ...commonProps,
     placeholder: ['开始日期', '结束日期'],
-    confirmText: '确定',
     errorText: '请选择起止时间',
-    format: 'YYYY-MM-DD',
-    showTime: false,
-    disabledDate: noop,
-    onChange: noop
+    defaultTime: ['00:00:00', '00:00:00']
   };
 
   constructor(props) {
@@ -132,13 +118,14 @@ class CombineDateRangePicker extends (PureComponent || Component) {
 
     const { value, valueType } = props;
     if (valueType) {
-      retType = valueType;
+      retType = valueType.toLowerCase();
     } else if (isValidValue(value)) {
       if (typeof value[0] === 'number') retType = 'number';
       if (value[0] instanceof Date) retType = 'date';
     }
 
     this.state = extractStateFromProps(props);
+    this.isfooterShow = props.showTime || props.isFooterVisble;
   }
 
   componentWillReceiveProps(next) {
@@ -208,14 +195,17 @@ class CombineDateRangePicker extends (PureComponent || Component) {
     });
 
     onClick && onClick(val, type);
+    if (!this.isfooterShow) {
+      this.onConfirm();
+    }
   };
 
   isDisabled = val => {
     const { disabledDate, format, min, max } = this.props;
 
     if (disabledDate && disabledDate(val)) return true;
-    if (min && val < maybeParseDate(min, format)) return true;
-    if (max && val >= maybeParseDate(max, format)) return true;
+    if (min && val < parseDate(min, format)) return true;
+    if (max && val > parseDate(max, format)) return true;
 
     return false;
   };
@@ -273,9 +263,6 @@ class CombineDateRangePicker extends (PureComponent || Component) {
       const base = actived[baseMap[type]];
       let acp = [base, base];
       acp.splice(baseMap[type], 1, goMonths(base, typeMap[type]));
-      // acp = acp.map((item, i) => {
-      //   return i === baseMap[type] ? goMonths(item, typeMap[type]) : item;
-      // });
 
       this.setState({
         actived: acp
@@ -363,10 +350,8 @@ class CombineDateRangePicker extends (PureComponent || Component) {
   };
 
   renderPicker() {
-    const state = this.state;
-    const props = this.props;
+    const { state, props } = this;
     let rangePicker;
-
     const getTimeConfig = type => {
       if (!props.showTime) return false;
       const handleMap = {
@@ -400,9 +385,14 @@ class CombineDateRangePicker extends (PureComponent || Component) {
         'range-picker': true,
         'range-picker--showTime': props.showTime
       });
+      const datePickerCls = classNames({
+        'date-picker': true,
+        small: this.isfooterShow
+      });
+
       rangePicker = (
         <div className={pickerCls} ref={ref => (this.picker = ref)}>
-          <div className="date-picker">
+          <div className={datePickerCls}>
             <DatePanel
               range={state.range}
               showTime={getTimeConfig('start')}
@@ -418,7 +408,7 @@ class CombineDateRangePicker extends (PureComponent || Component) {
               showNext={false}
             />
           </div>
-          <div className="date-picker">
+          <div className={datePickerCls}>
             <DatePanel
               range={state.range}
               showTime={getTimeConfig('end')}
@@ -434,12 +424,14 @@ class CombineDateRangePicker extends (PureComponent || Component) {
               showNext
             />
           </div>
-          <PanelFooter
-            buttonText={props.confirmText}
-            onClickButton={this.onConfirm}
-            showError={state.showError}
-            errorText={props.errorText}
-          />
+          {this.isfooterShow ? (
+            <PanelFooter
+              buttonText={props.confirmText}
+              onClickButton={this.onConfirm}
+              showError={state.showError}
+              errorText={props.errorText}
+            />
+          ) : null}
         </div>
       );
     }
@@ -447,24 +439,21 @@ class CombineDateRangePicker extends (PureComponent || Component) {
     return rangePicker;
   }
 
-  togglePicker = () => {
+  togglePicker = visible => {
     const { onOpen, onClose, disabled } = this.props;
-    const openPanel = !this.state.openPanel;
-
     if (disabled) return;
 
-    openPanel ? onOpen && onOpen() : onClose && onClose();
+    visible ? onOpen && onOpen() : onClose && onClose();
     this.setState({
-      openPanel: !this.state.openPanel
+      openPanel: visible
     });
   };
 
   render() {
-    const state = this.state;
-    const props = this.props;
+    const { state, props } = this;
     const prefixCls = `${props.prefix}-datetime-picker ${props.className}`;
     const inputCls = classNames({
-      'picker-input--range picker-input': true,
+      'picker-input--range picker-input picker-input--combine': true,
       'picker-input--filled': !state.showPlaceholder,
       'picker-input--showTime': props.showTime,
       'picker-input--disabled': props.disabled
@@ -477,10 +466,10 @@ class CombineDateRangePicker extends (PureComponent || Component) {
           visible={state.openPanel}
           onVisibleChange={this.togglePicker}
           className={`${props.prefix}-datetime-picker-popover ${props.className}-popover`}
-          position={Popover.Position.AutoBottomLeft}
+          position={popPositionMap[props.popPosition.toLowerCase()]}
         >
           <Popover.Trigger.Click>
-            <div className={inputCls}>
+            <div className={inputCls} onClick={evt => evt.preventDefault()}>
               {state.showPlaceholder
                 ? props.placeholder.join(' 至 ')
                 : state.value.join(' 至 ')}
@@ -491,9 +480,7 @@ class CombineDateRangePicker extends (PureComponent || Component) {
               />
             </div>
           </Popover.Trigger.Click>
-          <Popover.Content>
-            {this.renderPicker()}
-          </Popover.Content>
+          <Popover.Content>{this.renderPicker()}</Popover.Content>
         </Popover>
       </div>
     );

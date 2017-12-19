@@ -2,6 +2,8 @@ import React, { Component, PureComponent } from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import omit from 'lodash/omit';
+import isNumber from 'lodash/isNumber';
+import getWidth from 'utils/getWidth';
 
 export default class Input extends (PureComponent || Component) {
   static propTypes = {
@@ -17,7 +19,11 @@ export default class Input extends (PureComponent || Component) {
     addonAfter: PropTypes.node,
     onPressEnter: PropTypes.func,
     onChange: PropTypes.func,
-    autoFocus: PropTypes.bool
+    autoFocus: PropTypes.bool,
+    initSelectionStart: PropTypes.number,
+    initSelectionEnd: PropTypes.number,
+    autoSelect: PropTypes.bool,
+    width: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
   };
 
   static defaultProps = {
@@ -25,18 +31,36 @@ export default class Input extends (PureComponent || Component) {
     readOnly: false,
     prefix: 'zent',
     type: 'text',
-    autoFocus: false
+    autoFocus: false,
+    autoSelect: false
   };
 
   componentDidMount() {
-    const { autoFocus } = this.props;
+    const {
+      autoFocus,
+      autoSelect,
+      initSelectionStart,
+      initSelectionEnd
+    } = this.props;
+
     if (autoFocus) {
       this.input.focus();
+    }
+    if (autoSelect) {
+      this.select(initSelectionStart, initSelectionEnd);
     }
   }
 
   focus() {
     this.input.focus();
+  }
+
+  select(selectioinStart, selectionEnd) {
+    if (isNumber(selectioinStart) && isNumber(selectionEnd)) {
+      this.input.setSelectionRange(selectioinStart, selectionEnd);
+    } else {
+      this.input.select();
+    }
   }
 
   handleKeyDown = evt => {
@@ -49,12 +73,24 @@ export default class Input extends (PureComponent || Component) {
   };
 
   render() {
-    const { addonBefore, addonAfter, prefix, className, type } = this.props;
+    const {
+      addonBefore,
+      addonAfter,
+      prefix,
+      className,
+      type,
+      width,
+      disabled,
+      readOnly
+    } = this.props;
+    const widthStyle = getWidth(width);
     const isTextarea = type.toLowerCase() === 'textarea';
+    const editable = !(disabled || readOnly);
 
     const wrapClass = classNames(
       {
         [`${prefix}-input-wrapper`]: true,
+        [`${prefix}-input-wrapper__not-editable`]: !editable,
         [`${prefix}-textarea-wrapper`]: isTextarea,
         [`${prefix}-input-addons`]: !isTextarea && (addonAfter || addonBefore)
       },
@@ -67,13 +103,17 @@ export default class Input extends (PureComponent || Component) {
       'prefix',
       'addonBefore',
       'addonAfter',
-      'onPressEnter'
+      'onPressEnter',
+      'width',
+      'autoSelect',
+      'initSelectionStart',
+      'initSelectionEnd'
     ]);
 
     if (isTextarea) {
       inputProps = omit(inputProps, ['type']);
       return (
-        <div className={wrapClass}>
+        <div className={wrapClass} style={widthStyle}>
           <textarea
             ref={input => {
               this.input = input;
@@ -87,11 +127,10 @@ export default class Input extends (PureComponent || Component) {
     }
 
     return (
-      <div className={wrapClass}>
-        {addonBefore &&
-          <span className={`${prefix}-input-addon-before`}>
-            {addonBefore}
-          </span>}
+      <div className={wrapClass} style={widthStyle}>
+        {addonBefore && (
+          <span className={`${prefix}-input-addon-before`}>{addonBefore}</span>
+        )}
         <input
           ref={input => {
             this.input = input;
@@ -100,10 +139,9 @@ export default class Input extends (PureComponent || Component) {
           {...inputProps}
           onKeyDown={this.handleKeyDown}
         />
-        {addonAfter &&
-          <span className={`${prefix}-input-addon-after`}>
-            {addonAfter}
-          </span>}
+        {addonAfter && (
+          <span className={`${prefix}-input-addon-after`}>{addonAfter}</span>
+        )}
       </div>
     );
   }

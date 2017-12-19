@@ -162,6 +162,47 @@ export class DesignEditor extends (PureComponent || Component) {
       design.setValidation({ [id]: errors });
     });
   }
+
+  /*
+   * Utility to reorder list for react-beautiful-dnd
+   * Scans the list only once.
+  */
+  reorder(array, fromIndex, toIndex) {
+    const lastIndex = array.length - 1;
+    const firstIndex = 0;
+    const result = new Array(array.length);
+    let tmp;
+
+    if (fromIndex < toIndex) {
+      for (let i = firstIndex; i <= lastIndex; i++) {
+        if (i === fromIndex) {
+          tmp = array[i];
+        } else if (i > fromIndex && i < toIndex) {
+          result[i - 1] = array[i];
+        } else if (i === toIndex) {
+          result[i - 1] = array[i];
+          result[i] = tmp;
+        } else {
+          result[i] = array[i];
+        }
+      }
+    } else {
+      for (let i = lastIndex; i >= firstIndex; i--) {
+        if (i === fromIndex) {
+          tmp = array[i];
+        } else if (i < fromIndex && i > toIndex) {
+          result[i + 1] = array[i];
+        } else if (i === toIndex) {
+          result[i] = tmp;
+          result[i + 1] = array[i];
+        } else {
+          result[i] = array[i];
+        }
+      }
+    }
+
+    return result;
+  }
 }
 
 /**
@@ -223,37 +264,40 @@ export class ControlGroup extends (PureComponent || Component) {
           {
             className: `${prefix}-design-editor__control-group-container`
           },
-          showLabel
-            ? <div
-                className={cx(
-                  `${prefix}-design-editor__control-group-label`,
-                  labelAlign &&
-                    `${prefix}-design-editor__control-group-label--${labelAlign}`
-                )}
-              >
-                {required &&
-                  <span
-                    className={`${prefix}-design-editor__control-group-required-star`}
-                  >
-                    *
-                  </span>}
-                {label}
-              </div>
-            : null,
+          showLabel ? (
+            <div
+              className={cx(
+                `${prefix}-design-editor__control-group-label`,
+                labelAlign &&
+                  `${prefix}-design-editor__control-group-label--${labelAlign}`
+              )}
+            >
+              {required && (
+                <span
+                  className={`${prefix}-design-editor__control-group-required-star`}
+                >
+                  *
+                </span>
+              )}
+              {label}
+            </div>
+          ) : null,
           <div className={`${prefix}-design-editor__control-group-control`}>
             {children}
-            {helpDesc &&
+            {helpDesc && (
               <div
                 className={`${prefix}-design-editor__control-group-help-desc`}
               >
                 {helpDesc}
-              </div>}
+              </div>
+            )}
           </div>
         )}
-        {errorVisible &&
+        {errorVisible && (
           <div className={`${prefix}-design-editor__control-group-error`}>
             {error}
-          </div>}
+          </div>
+        )}
       </div>
     );
   }

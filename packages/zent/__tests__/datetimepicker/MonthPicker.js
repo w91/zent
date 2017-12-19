@@ -1,12 +1,28 @@
 import React from 'react';
 import { mount, ReactWrapper } from 'enzyme';
 import MonthPicker from 'datetimepicker/MonthPicker';
-import { formatDate } from 'datetimepicker/utils/date';
+import formatDate from 'zan-utils/date/formatDate';
 
 describe('MonthPicker', () => {
-  it('MonthPicker has 2 level panel', () => {
+  it('MonthPicker not show footer ', () => {
     let pop;
     const wrapper = mount(<MonthPicker />);
+    wrapper.find('.picker-input').simulate('click');
+
+    pop = new ReactWrapper(wrapper.instance().picker, true);
+
+    expect(pop.find('MonthPanel').length).toBe(1);
+    pop
+      .find('.panel__cell')
+      .at(1)
+      .simulate('click');
+
+    expect(wrapper.state('openPanel')).toBe(false);
+  });
+
+  it('MonthPicker has 2 level panel', () => {
+    let pop;
+    const wrapper = mount(<MonthPicker isFooterVisble />);
     const inst = wrapper.instance();
     expect(inst.state.openPanel).toBe(false);
     expect(inst.state.showPlaceholder).toBe(true);
@@ -27,10 +43,16 @@ describe('MonthPicker', () => {
     expect(pop.find('YearPanel').length).toBe(1);
     expect(pop.find('YearPanel .grid-cell').length).toBe(12);
 
-    pop.find('YearPanel .panel__cell').at(1).simulate('click');
+    pop
+      .find('YearPanel .panel__cell')
+      .at(1)
+      .simulate('click');
     expect(pop.find('YearPanel').length).toBe(0);
 
-    pop.find('MonthPanel .panel__cell').at(1).simulate('click');
+    pop
+      .find('MonthPanel .panel__cell')
+      .at(1)
+      .simulate('click');
     pop.find('.btn--confirm').simulate('click');
     expect(wrapper.find('ClosablePortal').prop('visible')).toBe(false);
 
@@ -44,17 +66,22 @@ describe('MonthPicker', () => {
   it('MonthPicker return empty string when click clear icon', () => {
     let wrapper;
     const onChangeMock = jest.fn();
-    wrapper = mount(<MonthPicker value="2010-01" onChange={onChangeMock} />);
-    wrapper.find('.zenticon-close-circle').at(0).simulate('click');
+    wrapper = mount(
+      <MonthPicker value="2010-01" onChange={onChangeMock} isFooterVisble />
+    );
+    wrapper
+      .find('.zenticon-close-circle')
+      .at(0)
+      .simulate('click');
     expect(onChangeMock.mock.calls[0][0].length).toBe(0);
   });
 
   it('MonthPicker support default value', () => {
     let wrapper;
-    wrapper = mount(<MonthPicker defaultValue="2010-01" />);
+    wrapper = mount(<MonthPicker defaultValue="2010-01" isFooterVisble />);
     expect(wrapper.instance().state.actived).toBeInstanceOf(Date);
 
-    wrapper = mount(<MonthPicker vaule="xxxx-xx" />);
+    wrapper = mount(<MonthPicker vaule="xxxx-xx" isFooterVisble />);
     expect(wrapper.instance().state.showPlaceholder).toBe(true);
   });
 
@@ -64,7 +91,9 @@ describe('MonthPicker', () => {
     const onChangeMock = jest.fn().mockImplementation(value => {
       wrapper.setProps({ value });
     });
-    wrapper = mount(<MonthPicker value="2010-01" onChange={onChangeMock} />);
+    wrapper = mount(
+      <MonthPicker value="2010-01" onChange={onChangeMock} isFooterVisble />
+    );
 
     const inst = wrapper.instance();
     expect(inst.state.showPlaceholder).toBe(false);

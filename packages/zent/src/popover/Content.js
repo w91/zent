@@ -2,6 +2,7 @@ import React, { Component, PureComponent } from 'react';
 import cx from 'classnames';
 import Portal from 'portal';
 import WindowResizeHandler from 'utils/component/WindowResizeHandler';
+import WindowEventHandler from 'utils/component/WindowEventHandler';
 import findPositionedParent from 'utils/dom/findPositionedParent';
 import throttle from 'lodash/throttle';
 
@@ -48,7 +49,9 @@ export default class PopoverContent extends (PureComponent || Component) {
     getAnchor: PropTypes.func,
 
     // defaults to body
-    containerSelector: PropTypes.string
+    containerSelector: PropTypes.string,
+
+    onPositionUpdated: PropTypes.func
   };
 
   state = {
@@ -84,14 +87,19 @@ export default class PopoverContent extends (PureComponent || Component) {
 
       return;
     }
+    const contentBoundingBox = content.getBoundingClientRect();
 
     const anchor = this.getAnchor();
+    if (!anchor) {
+      return;
+    }
     const boundingBox = anchor.getBoundingClientRect();
 
     const parent = this.getPositionedParent();
+    if (!parent) {
+      return;
+    }
     const parentBoundingBox = parent.getBoundingClientRect();
-
-    const contentBoundingBox = content.getBoundingClientRect();
 
     const relativeBB = translateToContainerCoordinates(
       parentBoundingBox,
@@ -118,9 +126,12 @@ export default class PopoverContent extends (PureComponent || Component) {
       }
     );
 
-    this.setState({
-      position
-    });
+    this.setState(
+      {
+        position
+      },
+      this.props.onPositionUpdated
+    );
   };
 
   onWindowResize = throttle((evt, delta) => {
@@ -128,6 +139,8 @@ export default class PopoverContent extends (PureComponent || Component) {
       this.adjustPosition();
     }
   }, 16);
+
+  onWindowScroll = throttle(this.adjustPosition, 16);
 
   componentDidMount() {
     const { visible } = this.props;
@@ -171,6 +184,10 @@ export default class PopoverContent extends (PureComponent || Component) {
         <div className={`${prefix}-popover-content`}>
           {children}
           <WindowResizeHandler onResize={this.onWindowResize} />
+          <WindowEventHandler
+            eventName="scroll"
+            callback={this.onWindowScroll}
+          />
         </div>
       </Portal>
     );

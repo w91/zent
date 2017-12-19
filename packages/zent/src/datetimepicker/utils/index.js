@@ -63,7 +63,7 @@ export const goDays = (val, diff) => {
 
 export const goMonths = (val, diff) => {
   const cp = new Date(val);
-  return new Date(cp.setMonth(cp.getMonth() + diff));
+  return new Date(cp.getFullYear(), cp.getMonth() + diff, 1);
 };
 
 export const goYears = (val, diff) => {
@@ -75,6 +75,9 @@ export const isArray = val => {
   return Array.isArray(val);
 };
 
-// export const isFunction = val => {
-//   return Object.prototype.toString.call(val) === '[object Function]';
-// };
+export const setSameDate = (val, target) => {
+  val.setFullYear(target.getFullYear());
+  val.setMonth(target.getMonth());
+  val.setDate(target.getDate());
+  return val;
+};

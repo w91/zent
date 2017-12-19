@@ -10,15 +10,15 @@ export default class MonthPanel extends (PureComponent || Component) {
   };
 
   prevYear = () => {
-    const { actived, onSelect } = this.props;
+    const { actived, onChange } = this.props;
     const prev = goYears(actived, -1);
-    onSelect(prev, true);
+    onChange(prev, true);
   };
 
   nextYear = () => {
-    const { actived, onSelect } = this.props;
+    const { actived, onChange } = this.props;
     const next = goYears(actived, 1);
-    onSelect(next, true);
+    onChange(next, true);
   };
 
   showYearPanel = () => {
@@ -28,11 +28,11 @@ export default class MonthPanel extends (PureComponent || Component) {
   };
 
   onSelectYear = (val, close = false) => {
-    const { actived, onSelect } = this.props;
-    const copy = new Date(actived);
+    const { actived, onChange } = this.props;
+    const acp = new Date(actived);
 
-    copy.setFullYear(val);
-    onSelect(copy, true);
+    acp.setFullYear(val);
+    onChange(acp, true);
 
     this.setState({
       showYear: close
@@ -41,20 +41,26 @@ export default class MonthPanel extends (PureComponent || Component) {
 
   onSelectMonth = val => {
     const { actived, onSelect } = this.props;
-    const copy = new Date(actived);
+    const acp = new Date(actived);
 
-    copy.setMonth(val);
-    onSelect(copy);
+    acp.setMonth(val);
+    onSelect(acp);
   };
 
   render() {
-    const { actived, selected } = this.props;
-    const { showYear } = this.state;
-    const title = `${actived.getFullYear()}年`;
+    const { props, state } = this;
+    const title = `${props.actived.getFullYear()}年`;
 
     let yearPanel;
-    if (showYear) {
-      yearPanel = <YearPanel actived={actived} onSelect={this.onSelectYear} />;
+    if (state.showYear) {
+      yearPanel = (
+        <YearPanel
+          actived={props.actived}
+          selected={props.selected}
+          onChange={this.onSelectYear}
+          onSelect={this.onSelectYear}
+        />
+      );
     }
 
     return (
@@ -66,11 +72,12 @@ export default class MonthPanel extends (PureComponent || Component) {
           next={this.nextYear}
         />
         <MonthPanelBody
-          actived={actived}
-          selected={selected}
+          actived={props.actived}
+          selected={props.selected}
+          disabledDate={props.disabledDate}
           onSelect={this.onSelectMonth}
         />
-        {showYear ? yearPanel : ''}
+        {state.showYear && yearPanel}
       </div>
     );
   }

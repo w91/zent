@@ -3,21 +3,20 @@
  */
 
 import React, { Component, PureComponent, Children } from 'react';
-import assign from 'lodash/assign';
 import omit from 'lodash/omit';
-import cloneDeep from 'lodash/cloneDeep';
 import isEqual from 'lodash/isEqual';
 import isArray from 'lodash/isArray';
 import noop from 'lodash/noop';
+import cloneDeep from 'lodash/cloneDeep';
 import PropTypes from 'prop-types';
 
 import Popover from 'popover';
-import Trigger from './triggers/Index';
+import Trigger from './trigger';
 import Popup from './Popup';
-import SimpleTrigger from './triggers/SimpleTrigger';
-import SelectTrigger from './triggers/SelectTrigger';
-import InputTrigger from './triggers/InputTrigger';
-import TagsTrigger from './triggers/TagsTrigger';
+import SimpleTrigger from './trigger/SimpleTrigger';
+import SelectTrigger from './trigger/SelectTrigger';
+import InputTrigger from './trigger/InputTrigger';
+import TagsTrigger from './trigger/TagsTrigger';
 
 class PopoverClickTrigger extends Popover.Trigger.Click {
   getTriggerProps(child) {
@@ -49,7 +48,7 @@ class Select extends (PureComponent || Component) {
       this.trigger = props.trigger;
     }
 
-    this.state = assign(
+    this.state = Object.assign(
       {
         selectedItems: [],
         selectedItem: {
@@ -66,56 +65,145 @@ class Select extends (PureComponent || Component) {
      * data支持字符串数组和对象数组两种模式
      *
      * 字符串数组默认value为下标
-     * 对象数组需提供value和text
+     * 对象数组需提供value和text, 或者通过 optionValue(prop) optionText(prop) 自定义
      *
-     * @return {object}
      */
-    let data = this.uniformData(this.props);
-    this.formateData(data);
+    this.uniformedData = this.uniformData(this.props);
+    this.traverseData(this.props);
   }
 
   componentWillReceiveProps(nextProps) {
-    let data = this.uniformData(nextProps);
-    // 重置组件data
-    // let selectedItems = [];
-
-    this.formateData(data, nextProps);
-    // if (isArray(nextProps.value)) {
-    //   this.sourceData.forEach(item => {
-    //     if (nextProps.value.indexOf(item.value) > -1) {
-    //       selectedItems.push(item);
-    //     }
-    //   });
-    // }
-    // this.setState({
-    //   selectedItems
-    // });
+    this.uniformedData = this.uniformData(nextProps);
+    this.traverseData(nextProps);
   }
 
-  // 统一children和data中的数据
+  /**
+   * 将使用 child-element 传入的 Options 格式化为对象数组(未严格约束)
+   * data-prop 的优先级高于 child-element
+   *
+   * @param {object} props - props of Select
+   * @returns {object[]} uniformedData - 格式化后对象数组
+   * @returns {string} uniformedData[].cid - internal id of option
+   * @returns {string} uniformedData[].text - text of an option
+   * @returns {any} uniformedData[].value - token of an option
+   * @memberof Select
+   */
   uniformData(props) {
-    let data = [];
-    if (props.children) {
-      data = Children.map(props.children, item => {
-        let value = item.props.value;
-        value = typeof value === 'undefined' ? item : value;
-        return assign({}, item.props, {
-          value,
-          text: item.props.children
-        });
+    const {
+      data,
+      children,
+      optionValue,
+      optionText,
+      resetOption,
+      resetText
+    } = props;
+
+    // 在需要时插入重置选项。
+    let uniformedData =
+      resetOption && (data || children)
+        ? [{ cid: '-1', value: null, text: resetText }] // insert reset option
+        : [];
+
+    // data-prop 高优先级, 格式化 optionValue、optionText
+    if (data) {
+      uniformedData = uniformedData.concat(
+        data.map((option, index) => {
+          // 处理字符串数组
+          if (typeof option !== 'object') {
+            return { text: option, value: option, cid: `${index}` };
+          }
+
+          // hacky the quirk when optionText = 'value' and avoid modify props
+          const optCopy = cloneDeep(option);
+
+          optCopy.cid = `${index}`;
+          if (optionValue) {
+            optCopy.value = option[optionValue];
+          }
+          if (optionText) {
+            optCopy.text = option[optionText];
+          }
+          return optCopy;
+        })
+      );
+      return uniformedData;
+    }
+
+    // 格式化 child-element
+    if (children) {
+      uniformedData = uniformedData.concat(
+        Children.map(children, (item, index) => {
+          let value = item.props.value;
+          value = typeof value === 'undefined' ? item : value;
+          return Object.assign({}, item.props, {
+            value,
+            cid: `${index}`,
+            text: item.props.children
+          });
+        })
+      );
+    }
+
+    return uniformedData;
+  }
+
+  /**
+   * accept uniformed data to traverse then inject selected option or options to next state
+   *
+   * @param {object[]} data - uniformed data
+   * @param {object} props - props of Select
+   * @memberof Select
+   */
+  traverseData(props, data = this.uniformedData) {
+    // option 数组置空后重置组件状态
+    if (!data || !data.length) {
+      return this.setState({
+        selectedItem: {},
+        selectedItems: []
       });
     }
 
-    // props.data会将子元素覆盖
-    if (props.data) {
-      data = props.data;
-    }
-    return data;
+    const { selectedItem, selectedItems } = this.state;
+    const { value, index, initialIndex, initialValue } = props;
+
+    // initialize selected internal state
+    const selected = { sItem: selectedItem, sItems: [] };
+
+    data.forEach((item, i) => {
+      // 处理 quirk 默认选项(initialIndex, initialValue) , 主要用于在非受控组件模式下指定默认值
+      if (
+        selectedItems.length === 0 &&
+        !selectedItem.cid &&
+        (initialValue !== null || initialIndex !== null)
+      ) {
+        const coord = { value: initialValue, index: initialIndex };
+        this.locateSelected(selected, coord, item, i);
+      }
+
+      // 处理受控逻辑(index, value)
+      if (value !== null || index !== null) {
+        this.locateSelected(selected, { value, index }, item, i);
+      }
+    });
+
+    this.setState({
+      selectedItem: selected.sItem,
+      selectedItems: selected.sItems
+    });
   }
 
-  // 显示当前选项，支持通过value和index进行外部控制
-  getOptions(state, props, item, i) {
-    let { value, index } = props;
+  /**
+   * judge if param 'item' selected
+   *
+   * @param {object} state - next state marked selected item or items
+   * @param {object} coord - coordinate for seleted judging
+   * @param {object} item - option object after uniformed
+   * @param {number} i - index of option in options list
+   * @memberof Select
+   * */
+  locateSelected(state, coord, item, i) {
+    const { value, index } = coord;
+
     if (isArray(value) && value.indexOf(item.value) > -1) {
       // rerender 去重
       if (!state.sItems.find(selected => selected.value === item.value)) {
@@ -134,71 +222,12 @@ class Select extends (PureComponent || Component) {
       (index !== 'undefined' && `${i}` === `${index}`)
     ) {
       state.sItem = item;
-    } else if (!value && !index) {
+    } else if (!value && !index && value !== 0) {
+      // github#406 修复option-value为假值数字0时的异常重置。
       // 单选重置
       state.sItem = {};
       state.sItems = [];
     }
-    return state;
-  }
-
-  // 对data进行处理，增加cid
-  formateData(data, props) {
-    data = data || this.sourceData;
-    props = props || this.props;
-    let that = this;
-    const { selectedItem, selectedItems } = this.state;
-    const {
-      value,
-      index,
-      initialIndex,
-      initialValue,
-      optionValue,
-      optionText
-    } = props;
-    const selected = { sItem: selectedItem, sItems: [] };
-
-    this.sourceData = cloneDeep(data)
-      .map(item => {
-        let result = {};
-        if (typeof item === 'object') {
-          result.value = item[optionValue];
-          result.text = item[optionText];
-          result = { ...item, ...result };
-        } else {
-          result.value = item;
-          result.text = item;
-        }
-        return result;
-      })
-      .map((item, i) => {
-        item.cid = `${i}`;
-
-        // 处理默认选项(initialIndex, initialValue)
-        if (
-          selectedItems.length === 0 &&
-          !selectedItem.cid &&
-          (initialValue !== null || initialIndex !== null)
-        ) {
-          that.getOptions(
-            selected,
-            { value: initialValue, index: initialIndex },
-            item,
-            i
-          );
-        }
-
-        // 与受控逻辑(index, value)
-        if (value !== null || index !== null) {
-          that.getOptions(selected, { value, index }, item, i);
-        }
-        return item;
-      });
-    this.setState({
-      selectedItem: selected.sItem,
-      selectedItems: selected.sItems
-    });
-    return this.sourceData;
   }
 
   // 接收trigger改变后的数据，将数据传给popup
@@ -221,7 +250,7 @@ class Select extends (PureComponent || Component) {
 
   // 将被选中的option的数据传给trigger
   optionChangedHandler = (ev, selectedItem) => {
-    let result = {};
+    const result = {};
     ev = ev || {
       preventDefault: noop,
       stopPropagation: noop
@@ -233,19 +262,22 @@ class Select extends (PureComponent || Component) {
       tags,
       onChange
     } = this.props;
-    let { selectedItems } = this.state;
+    const { selectedItems } = this.state;
     if (!selectedItem) {
       onEmptySelected(ev);
       return;
     }
-    let args = omit(selectedItem, ['cid']);
+    const args = omit(selectedItem, ['cid']);
     result[optionValue] = selectedItem.value;
     result[optionText] = selectedItem.text;
-    let data = { ...args, ...result };
+    const data = { ...args, ...result };
     if (tags) {
       if (!selectedItems.some(item => item.cid === selectedItem.cid)) {
         selectedItems.push(selectedItem);
       }
+    } else if (selectedItem.value === null) {
+      // customize reset option
+      selectedItem = {};
     }
     this.setState(
       {
@@ -284,19 +316,21 @@ class Select extends (PureComponent || Component) {
   };
 
   render() {
-    let {
+    const {
       placeholder,
       maxToShow,
       className,
-      wrapperClassName,
+      popupClassName,
       disabled,
       emptyText,
       filter = this.props.onFilter,
       onAsyncFilter,
-      searchPlaceholder
+      searchPlaceholder,
+      autoWidth,
+      width
     } = this.props;
 
-    let {
+    const {
       open,
       selectedItems,
       selectedItem = {},
@@ -304,18 +338,19 @@ class Select extends (PureComponent || Component) {
       keyword = null
     } = this.state;
 
-    let { cid = '' } = selectedItem;
+    const { cid = '' } = selectedItem;
 
-    let disabledCls = disabled ? 'disabled' : '';
-    let prefixCls = `${this.props.prefix}-select`;
+    const disabledCls = disabled ? 'disabled' : '';
+    const prefixCls = `${this.props.prefix}-select`;
     return (
       <Popover
         display="inline-block"
         position={Popover.Position.AutoBottomLeft}
         visible={open}
-        className={`${prefixCls} ${className}`}
-        wrapperClassName={`${prefixCls} ${wrapperClassName} ${disabledCls}`}
+        className={`${prefixCls} ${popupClassName}`}
+        wrapperClassName={`${prefixCls} ${className} ${disabledCls}`}
         onVisibleChange={this.handlePopoverVisibleChange}
+        width={width}
       >
         <PopoverClickTrigger>
           <Trigger
@@ -335,7 +370,7 @@ class Select extends (PureComponent || Component) {
             ref={ref => (this.popup = ref)}
             cid={cid}
             prefixCls={prefixCls}
-            data={this.sourceData}
+            data={this.uniformedData}
             selectedItems={selectedItems}
             extraFilter={extraFilter}
             searchPlaceholder={searchPlaceholder}
@@ -347,6 +382,7 @@ class Select extends (PureComponent || Component) {
             onChange={this.optionChangedHandler}
             onFocus={this.popupFocusHandler}
             onBlur={this.popupBlurHandler}
+            autoWidth={autoWidth}
           />
         </Popover.Content>
       </Popover>
@@ -359,12 +395,12 @@ Select.propTypes = {
   prefix: PropTypes.string,
   className: PropTypes.string,
   open: PropTypes.bool,
-  wrapperClassName: PropTypes.string,
+  popupClassName: PropTypes.string,
   disabled: PropTypes.bool,
   placeholder: PropTypes.string,
   maxToShow: PropTypes.number,
   searchPlaceholder: PropTypes.string,
-  emptyText: PropTypes.string,
+  emptyText: PropTypes.node,
   selectedItem: PropTypes.shape({
     value: PropTypes.any,
     text: PropTypes.string
@@ -377,7 +413,17 @@ Select.propTypes = {
   filter: PropTypes.func,
   onAsyncFilter: PropTypes.func,
   onEmptySelected: PropTypes.func,
-  onOpen: PropTypes.func
+  onOpen: PropTypes.func,
+  width: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+
+  // 自动根据ref计算弹层宽度
+  autoWidth: PropTypes.bool,
+
+  // 自动添加重置选项
+  resetOption: PropTypes.bool,
+
+  // 重置选项展示文本
+  resetText: PropTypes.string
 };
 
 Select.defaultProps = {
@@ -385,7 +431,7 @@ Select.defaultProps = {
   disabled: false,
   className: '',
   open: false,
-  wrapperClassName: '',
+  popupClassName: '',
   trigger: SelectTrigger,
   placeholder: '请选择',
   searchPlaceholder: '',
@@ -397,17 +443,21 @@ Select.defaultProps = {
   selectedItems: [],
   optionValue: 'value',
   optionText: 'text',
-
-  // HACK
-  value: null,
-  index: null,
-  initialValue: null,
-  initialIndex: null,
-
   onChange: noop,
   onDelete: noop,
   onEmptySelected: noop,
-  onOpen: noop
+  onOpen: noop,
+  autoWidth: false,
+
+  // 重置为默认值
+  resetOption: false,
+  resetText: '请选择',
+
+  // 内部状态标记，默认初始值为 null
+  value: null,
+  index: null,
+  initialValue: null,
+  initialIndex: null
 };
 
 export default Select;

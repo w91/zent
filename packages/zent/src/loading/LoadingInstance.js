@@ -1,10 +1,14 @@
 import React, { Component, PureComponent } from 'react';
 import ReactDOM from 'react-dom';
 import isBrowser from 'utils/isBrowser';
+import defer from 'lodash/defer';
 
 import PropTypes from 'prop-types';
 
 import Loading from './Loading';
+
+// Global loading instance
+let loadingInstance;
 
 export default class Instance extends (PureComponent || Component) {
   static propTypes = {
@@ -25,54 +29,6 @@ export default class Instance extends (PureComponent || Component) {
     height: 160,
     zIndex: 9998,
     containerClass: ''
-  };
-
-  static target;
-  static instance;
-
-  // 对外暴露的静态初始方法
-  static newInstance = function(props) {
-    if (!isBrowser) return;
-
-    let div = document.createElement('div');
-    div.className = `${props.prefix}-loading-container ${props.containerClass}`;
-    document.body.appendChild(div);
-    let loading = ReactDOM.render(<Loading {...props} />, div);
-    return {
-      show: loading.show,
-      container: div
-    };
-  };
-
-  static on = function(
-    { prefix = 'zent', className = '', containerClass = '', zIndex = 9998 } = {}
-  ) {
-    if (!isBrowser) return;
-
-    if (!this.instance) {
-      this.instance = this.newInstance({
-        show: true,
-        prefix,
-        className,
-        containerClass,
-        zIndex,
-        float: true
-      });
-    }
-
-    this.instance.show({
-      show: true
-    });
-  };
-
-  static off = function() {
-    if (!isBrowser) return;
-
-    if (!this.instance) return;
-
-    this.instance.show({
-      show: false
-    });
   };
 
   componentDidMount() {
@@ -103,16 +59,14 @@ export default class Instance extends (PureComponent || Component) {
       if (!target) {
         target = ReactDOM.findDOMNode(this);
       }
-      this.instance = Instance.newInstance({
+      this.instance = newInstance({
         ...this.props,
         target
       });
     }
 
     if (this.instance) {
-      this.instance.show({
-        ...this.props
-      });
+      this.instance.show(this.props);
     }
   }
 
@@ -127,9 +81,62 @@ export default class Instance extends (PureComponent || Component) {
       );
     }
 
-    // In case Loading has no children
+    // Return null to make React happy if Loading has no children
     return this.props.children || null;
   }
+}
+
+// ReactDOM.render returns null when called inside lifecycle methods
+// Just a workaround
+// These methods should be considered deprecated, don't use them.
+Instance.on = options => defer(on, options);
+Instance.off = options => defer(off, options);
+Instance.newInstance = props => defer(newInstance, props);
+
+function on(
+  { prefix = 'zent', className = '', containerClass = '', zIndex = 9998 } = {}
+) {
+  if (!isBrowser) return;
+
+  if (!loadingInstance) {
+    loadingInstance = newInstance({
+      show: true,
+      prefix,
+      className,
+      containerClass,
+      zIndex,
+      float: true
+    });
+
+    return;
+  }
+
+  loadingInstance.show({
+    show: true
+  });
+}
+
+function off() {
+  if (!isBrowser) return;
+
+  if (!loadingInstance) return;
+
+  loadingInstance.show({
+    show: false
+  });
+}
+
+function newInstance(props) {
+  if (!isBrowser) return;
+
+  let div = document.createElement('div');
+  div.className = `${props.prefix}-loading-container ${props.containerClass}`;
+  document.body.appendChild(div);
+  let loading = ReactDOM.render(<Loading {...props} />, div);
+  return {
+    show: loading.show,
+    container: div
+  };
 }
 
 // FIXME: remove support for props.static

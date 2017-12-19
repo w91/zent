@@ -1,7 +1,8 @@
-$c-border: #bbb;
-$c-blue: #38f;
-$c-light-blue: #bdf;
-$c-blue-hover: #eaf3ff;
+@import './theme/default.pcss';
+$c-border: $theme-stroke-5;
+$c-blue: $theme-primary-1;
+$c-light-blue: $theme-primary-4;
+$c-blue-hover: $theme-primary-6;
 
 .zent-cascader {
   display: inline-block;
@@ -21,7 +22,6 @@ $c-blue-hover: #eaf3ff;
     cursor: pointer;
     display: inline-block;
     font-size: 0;
-    outline: none;
     position: relative;
     text-align: left;
     user-select: none;
@@ -34,20 +34,24 @@ $c-blue-hover: #eaf3ff;
       border-radius: 2px;
       display: inline-block;
       min-height: 30px;
+      line-height: 1.5;
       max-height: 76px;
-      outline: none;
       padding: 5px 30px 5px 10px;
       transition: border-color 0.25s;
       width: 100%;
-      background-color: #fff;
+      background-color: $theme-stroke-10;
       position: relative;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       font-size: 12px;
 
+      &-content {
+        line-height: inherit;
+      }
+
       &.is-placeholder {
-        color: #999;
+        color: $theme-stroke-4;
       }
 
       .zenticon {
@@ -94,7 +98,7 @@ $c-blue-hover: #eaf3ff;
       &.active {
         background: $c-blue;
         border-radius: 2px;
-        color: #fff;
+        color: $theme-stroke-10;
       }
     }
   }
@@ -127,12 +131,12 @@ $c-blue-hover: #eaf3ff;
   }
 
   &__popup {
-    z-index: 1080;
+    z-index: 2000;
 
     &-inner {
-      background: #fff;
+      background: $theme-stroke-10;
       width: 440px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 1px 4px $theme-mask-black-2;
       box-sizing: border-box;
       margin-top: 5px;
     }

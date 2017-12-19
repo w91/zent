@@ -2,8 +2,8 @@ import React, { PureComponent, Component } from 'react';
 import { findDOMNode } from 'react-dom';
 import PropTypes from 'prop-types';
 import isFunction from 'lodash/isFunction';
+import scroll from 'utils/scroll';
 
-import scroll from '../utils/scroll';
 import offset from '../utils/offset';
 
 function scrollNodeToTop(node, offsets) {
@@ -30,11 +30,7 @@ export default class DesignPreviewItem extends (PureComponent || Component) {
   render() {
     const { children, prefix } = this.props;
 
-    return (
-      <div className={`${prefix}-design-preview-item`}>
-        {children}
-      </div>
-    );
+    return <div className={`${prefix}-design-preview-item`}>{children}</div>;
   }
 
   scrollTop(offsets) {

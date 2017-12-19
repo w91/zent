@@ -1,15 +1,21 @@
 @import "./_constants.pcss";
+@import "./_animation.pcss";
 
 .app {
-  min-width: 1000px;
+  min-width: 1200px;
 }
 
 .page-content {
   overflow-x: auto;
+  position: relative;
 }
 
 .react-doc-page-content {
-  min-height: 600px;
+  min-height: 100%;
+  padding-bottom: 62px;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
 }
 
 .zandoc-react-container {
@@ -38,6 +44,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      cursor: pointer;
     }
 
     &__toggle {
@@ -49,7 +56,6 @@
       border-radius: 50%;
       font-size: 12px;
       line-height: 20px;
-      cursor: pointer;
       flex: 0 0 auto;
 
       &-off {
@@ -72,5 +78,61 @@
     &__code {
       border-top: 1px solid $border-color;
     }
+  }
+}
+
+.zandoc-react-color-row {
+  margin-bottom: 10px;
+
+  .zandoc-react-color-cell {
+    margin-right: 10px;
+
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+}
+
+.zandoc-react-color-cell {
+  display: inline-block;
+  width: 250px;
+  height: 80px;
+  border-radius: 4px;
+  padding: 5px 10px;
+  box-sizing: border-box;
+  font-family: monospace;
+
+  .zandoc-react-color-cell__name {
+    margin-top: 8px;
+    font-size: 20px;
+  }
+
+  .zandoc-react-color-cell__color {
+    margin-top: 8px;
+    font-size: 14px;
+  }
+
+  &--light {
+    .zandoc-react-color-cell__name {
+      color: #fff;
+    }
+
+    .zandoc-react-color-cell__color {
+      color: #e5e5e5;
+    }
+  }
+
+  &--dark {
+    .zandoc-react-color-cell__name {
+      color: #333;
+    }
+
+    .zandoc-react-color-cell__color {
+      color: #999;
+    }
+  }
+
+  &__mask-white {
+    border: 1px solid #e5e5e5;
   }
 }

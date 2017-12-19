@@ -186,6 +186,15 @@ export default class Table extends (PureComponent || Component) {
     }
   };
 
+  /**
+   * 设置内部属性，cached选中结果
+   */
+  setSelection() {
+    let { selection } = this.props;
+    this.selectedRowKeys = selection.selectedRowKeys.slice(0); // copy 一份数组
+    this.selectedRows = this.getSelectedRowsByKeys(this.selectedRowKeys);
+  }
+
   /*
    * Head上的选中会全选所有的行
    * @param isSelect {Boolean} 表示是否全选
@@ -202,6 +211,8 @@ export default class Table extends (PureComponent || Component) {
       }
     } = this.props;
 
+    this.setSelection();
+
     let allRowKeys = this.selectedRowKeys;
     let allRows = this.selectedRows;
 
@@ -215,18 +226,20 @@ export default class Table extends (PureComponent || Component) {
     }
 
     if (isSelect) {
-      allRowKeys = rowKeysCurrentPage;
-      allRows = rowsCurrentPage;
       if (this.props.selection.needCrossPage) {
         allRowKeys = uniq(allRowKeys.concat(rowKeysCurrentPage));
         allRows = uniqBy(allRows.concat(rowsCurrentPage), rowKey);
+      } else {
+        allRowKeys = rowKeysCurrentPage;
+        allRows = rowsCurrentPage;
       }
     } else {
-      allRowKeys = [];
-      allRows = [];
       if (this.props.selection.needCrossPage) {
         allRowKeys = pullAll(allRowKeys, rowKeysCurrentPage);
         allRows = pullAllBy(allRows, rowsCurrentPage, rowKey);
+      } else {
+        allRowKeys = [];
+        allRows = [];
       }
     }
 
@@ -243,8 +256,7 @@ export default class Table extends (PureComponent || Component) {
    */
   onSelectOneRow = (rowKey, isSelect) => {
     let { selection } = this.props;
-
-    this.selectedRowKeys = selection.selectedRowKeys.slice(0); // copy 一份数组
+    this.setSelection();
     let index = this.selectedRowKeys.indexOf(rowKey);
     let isSingleSelection = selection.isSingleSelection || false;
 
@@ -267,10 +279,10 @@ export default class Table extends (PureComponent || Component) {
         this.props.datasets.map(item => item[this.props.rowKey])
       );
     }
-    let selectedRows = this.getSelectedRowsByKeys(this.selectedRowKeys);
+    this.selectedRows = this.getSelectedRowsByKeys(this.selectedRowKeys);
     let currentRow = isSelect ? this.getCurrentRow(rowKey) : null;
 
-    selection.onSelect(this.selectedRowKeys, selectedRows, currentRow);
+    selection.onSelect(this.selectedRowKeys, this.selectedRows, currentRow);
   };
 
   getCurrentRow(key) {
@@ -378,8 +390,10 @@ export default class Table extends (PureComponent || Component) {
     }
     let selectedRowKeys = [];
 
+    let canSelectAll = false;
     let isSelectAll = false;
     let isSelectPart = false;
+    let canRowSelect = false;
 
     let needExpand = false;
     let isExpanded;
@@ -400,6 +414,8 @@ export default class Table extends (PureComponent || Component) {
       });
 
       selectedRowKeys = selection.selectedRowKeys || [];
+      canSelectAll = canSelectRowKeysArr.length > 0;
+      canRowSelect = selection.canRowSelect;
       isSelectAll =
         canSelectRowKeysArr.length > 0 &&
         helper.isSelectAll(selectedRowKeys, canSelectRowKeysArr);
@@ -413,14 +429,13 @@ export default class Table extends (PureComponent || Component) {
     return (
       <div className={`${prefix}-table-container`}>
         <Loading show={this.props.loading} static>
-          {columns &&
+          {columns && (
             <div className={`${prefix}-table ${className}`}>
-              {this.state.placeHolderHeight &&
+              {this.state.placeHolderHeight && (
                 <div className="thead place-holder">
-                  <div className="tr">
-                    {this.cloneHeaderContent()}
-                  </div>
-                </div>}
+                  <div className="tr">{this.cloneHeaderContent()}</div>
+                </div>
+              )}
               <Head
                 ref={c => (this.head = c)}
                 columns={columns}
@@ -431,6 +446,7 @@ export default class Table extends (PureComponent || Component) {
                   needSelect,
                   onSelectAll: this.onSelectAllRows,
                   isSingleSelection,
+                  canSelectAll,
                   isSelectAll,
                   isSelectPart
                 }}
@@ -448,7 +464,8 @@ export default class Table extends (PureComponent || Component) {
                   needSelect,
                   selectedRowKeys,
                   isSingleSelection,
-                  onSelect: this.onSelectOneRow
+                  onSelect: this.onSelectOneRow,
+                  canRowSelect
                 }}
                 needExpand={needExpand}
                 isExpanded={isExpanded}
@@ -470,7 +487,8 @@ export default class Table extends (PureComponent || Component) {
                 current={this.state.current}
                 onPageChange={this.onPageChange}
               />
-            </div>}
+            </div>
+          )}
         </Loading>
       </div>
     );

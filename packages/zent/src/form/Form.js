@@ -9,14 +9,24 @@ class Form extends (PureComponent || Component) {
     className: PropTypes.string,
     horizontal: PropTypes.bool,
     inline: PropTypes.bool,
+    vertical: PropTypes.bool,
     onSubmit: PropTypes.func,
     children: PropTypes.any,
-    style: PropTypes.object
+    style: PropTypes.object,
+    disableEnterSubmit: PropTypes.bool
   };
 
   static defaultProps = {
     prefix: 'zent',
-    onSubmit: noop
+    onSubmit: noop,
+    disableEnterSubmit: true
+  };
+
+  onKeyDown = event => {
+    // 默认禁止回车触发表单提交事件
+    if (this.props.disableEnterSubmit && event.keyCode === 13) {
+      event.preventDefault();
+    }
   };
 
   render() {
@@ -32,10 +42,16 @@ class Form extends (PureComponent || Component) {
       [`${prefix}-form`]: true,
       [`${prefix}-form--horizontal`]: horizontal,
       [`${prefix}-form--inline`]: inline,
+      [`${prefix}-form--vertical`]: !horizontal && !inline,
       [className]: !!className
     });
     return (
-      <form className={formClassName} style={style} onSubmit={onSubmit}>
+      <form
+        className={formClassName}
+        style={style}
+        onSubmit={onSubmit}
+        onKeyDown={this.onKeyDown}
+      >
         {this.props.children}
       </form>
     );

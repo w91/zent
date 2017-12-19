@@ -1,8 +1,9 @@
 import React, { Component, PureComponent } from 'react';
 import classNames from 'classnames';
+import formatDate from 'zan-utils/date/formatDate';
+
 import TimePanel from './time/TimePanel';
 import PanelFooter from './common/PanelFooter';
-import { formatDate } from './utils/date';
 import clickOutside from './utils/clickOutside';
 import { TIME_PROPS } from './constants/';
 
@@ -66,8 +67,7 @@ class TimePicker extends (PureComponent || Component) {
   };
 
   render() {
-    const state = this.state;
-    const props = this.props;
+    const { props, state } = this;
     const prefixCls = `${props.prefix}-datetime-picker ${props.className}`;
     const inputCls = classNames({
       'picker-input': true,
