@@ -1,27 +1,15 @@
 import makeDateStr from 'zan-utils/date/makeDateStr';
 import makeDateTimeStr from 'zan-utils/date/makeDateTimeStr';
 import * as Ut from 'datetimepicker/utils';
-import {
-  dayStart,
-  dayEnd,
-  setTime,
-  getSeasonFromDate
-} from 'datetimepicker/utils/date';
+import { CURRENT, CURRENT_MONTH } from 'datetimepicker/constants';
+
+const { dayStart, dayEnd, setTime } = Ut;
 
 /**
  * Utnit_Test for Uttility fUtnctions of DateTimePicker Component
  */
 
 describe('Utils', () => {
-  it('The Ut contains some CONSTANTS', () => {
-    expect(Ut.CURRENT instanceof Date).toBe(true);
-    expect(Ut.CURRENT_DAY instanceof Date).toBe(true);
-    expect(typeof Ut.CURRENT_YEAR).toBe('number');
-    expect(typeof Ut.CURRENT_MONTH).toBe('number');
-    expect(typeof Ut.CURRENT_DATE).toBe('number');
-    expect(Ut.ONEDAY).toBe(86400000);
-  });
-
   it('Ut has some utils methods as package of Date Object', () => {
     const {
       padLeft,
@@ -60,8 +48,8 @@ describe('Utils', () => {
     ).toBe(false);
 
     // only compare month number
-    expect(isCurrentMonth(Ut.CURRENT)).toBe(true);
-    expect(isCurrentMonth(new Date(1999, Ut.CURRENT_MONTH, 12))).toBe(true);
+    expect(isCurrentMonth(CURRENT)).toBe(true);
+    expect(isCurrentMonth(new Date(1999, CURRENT_MONTH, 12))).toBe(true);
 
     expect(isBeforeMonth(new Date(1991, 7), new Date(2000, 7))).toBe(true);
     expect(isBeforeMonth(new Date(1991, 7), new Date(1989, 7))).toBe(false);
@@ -138,27 +126,5 @@ describe('setTime', () => {
     expect(ret.getHours()).toBe(1);
     expect(ret.getMinutes()).toBe(1);
     expect(ret.getSeconds()).toBe(1);
-  });
-});
-
-describe('getSeasonFromDate', () => {
-  let day;
-  let season;
-  it('should return right season', () => {
-    day = new Date(2018, 1, 1);
-    season = getSeasonFromDate(day);
-    expect(season).toBe(0);
-
-    day = new Date(2018, 4, 1);
-    season = getSeasonFromDate(day);
-    expect(season).toBe(1);
-
-    day = new Date(2018, 7, 1);
-    season = getSeasonFromDate(day);
-    expect(season).toBe(2);
-
-    day = new Date(2018, 10, 1);
-    season = getSeasonFromDate(day);
-    expect(season).toBe(3);
   });
 });

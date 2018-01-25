@@ -2,7 +2,7 @@
  * Select
  */
 
-import React, { Component, PureComponent, Children } from 'react';
+import React, { Component, Children } from 'react';
 import omit from 'lodash/omit';
 import isEqual from 'lodash/isEqual';
 import isArray from 'lodash/isArray';
@@ -34,7 +34,7 @@ class PopoverClickTrigger extends Popover.Trigger.Click {
   }
 }
 
-class Select extends (PureComponent || Component) {
+class Select extends Component {
   constructor(props) {
     super(props);
 
@@ -54,7 +54,10 @@ class Select extends (PureComponent || Component) {
         selectedItem: {
           value: '',
           text: ''
-        }
+        },
+
+        // popover content 位置就绪可以进行 focus 操作的标记.
+        optionsReady: false
       },
       props
     );
@@ -204,15 +207,21 @@ class Select extends (PureComponent || Component) {
   locateSelected(state, coord, item, i) {
     const { value, index } = coord;
 
-    if (isArray(value) && value.indexOf(item.value) > -1) {
+    if (isArray(value)) {
+      let valueIndex = value.indexOf(item.value);
       // rerender 去重
-      if (!state.sItems.find(selected => selected.value === item.value)) {
-        state.sItems.push(item);
+      if (
+        valueIndex > -1 &&
+        !state.sItems.find(
+          selected => selected && selected.value === item.value
+        )
+      ) {
+        state.sItems[valueIndex] = item;
+      } else if (value.length === 0) {
+        // 多选重置
+        state.sItem = {};
+        state.sItems = [];
       }
-    } else if (isArray(value) && value.length === 0) {
-      // 多选重置
-      state.sItem = {};
-      state.sItems = [];
     } else if (typeof value === 'object' && isEqual(value, item.value)) {
       state.sItem = item;
     } else if (
@@ -335,6 +344,7 @@ class Select extends (PureComponent || Component) {
       selectedItems,
       selectedItem = {},
       extraFilter,
+      optionsReady,
       keyword = null
     } = this.state;
 
@@ -363,6 +373,11 @@ class Select extends (PureComponent || Component) {
             {...selectedItem}
             onChange={this.triggerChangeHandler}
             onDelete={this.triggerDeleteHandler}
+            onPositionReady={() => {
+              this.setState({
+                optionsReady: true
+              });
+            }}
           />
         </PopoverClickTrigger>
         <Popover.Content>
@@ -371,6 +386,7 @@ class Select extends (PureComponent || Component) {
             cid={cid}
             prefixCls={prefixCls}
             data={this.uniformedData}
+            ready={optionsReady}
             selectedItems={selectedItems}
             extraFilter={extraFilter}
             searchPlaceholder={searchPlaceholder}
@@ -433,9 +449,9 @@ Select.defaultProps = {
   open: false,
   popupClassName: '',
   trigger: SelectTrigger,
-  placeholder: '请选择',
+  placeholder: '',
   searchPlaceholder: '',
-  emptyText: '没有找到匹配项',
+  emptyText: '',
   selectedItem: {
     value: '',
     text: ''
@@ -451,7 +467,7 @@ Select.defaultProps = {
 
   // 重置为默认值
   resetOption: false,
-  resetText: '请选择',
+  resetText: '...',
 
   // 内部状态标记，默认初始值为 null
   value: null,

@@ -15,8 +15,11 @@ H5 page editor, build your H5 pages in a WYSIWYG way.
 | components | All available components in Design | array | [] | Yes |
 | value | Current value | array | [] | Yes |
 | onChange | Callback when value changes | func(value: array): void | Yes |
+| settings | Design settings, will be passed to every Design component | object | | No |
+| onSettingsChange | Callback to change settings | func | | No |
 | defaultSelectedIndex| Default selected index in value array | number | -1 | No |
 | preview | Custom Preview component | Component | DesingPreview | No |
+| previewFooter | Custom footer after preview section | node |  | No | 
 | confirmUnsavedLeave| Show a confirm dialog if there're unsaved changes | boolean | true | No |
 | cache | Cache unsaved changes to `localStorage` | boolean | false | No |
 | cacheId | Cache id, must be used with `cache` | string | | Yes if `cache` is `true`, No otherwise |
@@ -120,6 +123,12 @@ Declaration：`group(name: string): object`
 ]
 ```
 
+### `settings` and `onSettingsChange`
+
+You can pass in a `settings` object and a corresponding `onSettingsChange` callback. This two props will be pass to every Design component.
+
+There's a predefined setting called `previewBackground`, Design will use this value as the preview background.
+
 ### Design Instance Methods
 
 * `design.validate(): Promise`, trigger a validation, resolves only if there's no erro.
@@ -203,7 +212,7 @@ export default class NoticeEditor extends DesignEditor {
 
   static designType = 'notice';
   static designDescription = '公告';
-  static getInitialValue() {
+  static getInitialValue(settings, globalConfig) {
     return {
       content: '',
       scrollable: false

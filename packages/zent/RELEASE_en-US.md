@@ -2,6 +2,113 @@
 
 You can find detailed change logs for versions prior to 3.5.3 at [Github Log](github_changelog#zent-3-5-2-2017-09-07).
 
+### 4.0.0 (2018-01-23)
+
+- 💥 Remove combine mode in `DateRangePicker`, `type` prop is removed.
+- `Upload` 
+  - ✨ Supports file groups
+  - ✨ Supports i18n
+- ✨ Add support for icons in `Menu` 
+- `DatePicker`
+  - 🦀️ Fix minimum time not respected in some cases
+  - 🦀️ Fix minimum time test bug
+- `Design`
+  - 🦀️ Fix styles in demos
+  - 🦀️ `DesignEditor` no longer inherits `PureComponent`
+- 🦀️ Fix style in `Slider`
+- 🦀️ Fix anchor not working in documentation site
+- 🦀️ Fix header not synchronized in `Grid`
+- 🦀️ Tune `Notify` animation
+- `Select`
+  - 🦀️ Fix compatibility bug in some browsers
+  - 🦀️ Fix `emptyText` not working
+- 🦀️ Fix demos in `Sortable`
+
+### 3.12.3 (2018-01-10)
+
+- 🦀️ Fix `Slider` background
+- 🦀️ Support `image/bmp` in `Upload`
+- 🦀️ Fix button styles and layout in `Design`
+
+### 3.12.2 (2018-01-09)
+
+- ✨ Remove mask background when `Loading` has no `children`
+- ✨ Rename files to follow the project naming style
+- 🦀️ Fix `Grid` header style
+- 🦀️ Fix font size in large `Button`
+- 🦀️ Fix year not checked in `MonthPicker`
+- 📚 New internationalization documentation
+
+### 3.12.1 (2018-01-05)
+
+- 🦀️ Fix `CombineDateRangePicker` closes before select the second date
+- 🦀️ Fix exit animation in `Notify`
+
+### 3.12.0 (2018-01-04)
+
+- 🎉 New component `Sortable`
+- 🎉 i18n support for components
+- ✨ `Tag` visibility can be controlled using props
+- ✨ `Input` supports clear button
+- ✨ `Grid` supports scroll with fixed header
+- ✨ `Notify` supports pile many instances with enter/leave animation
+- `Form`
+  - ✨ `Field` supports `displayError` to control error message display
+  - ✨ `Field` supports `relatedFields` to specify validation dependencies.
+  - ✨ Rewrite `FieldArray`
+- ✨ `Swiper` supports add/remove images dynamically
+- ✨ `Design` supports `settings` and `onSettingsChange` to manage dynamic global settings
+- ✨ `Sweetalert` can configure close button and click on mask to close
+- 🦀️ Fix `DateRangePicker` disabled style
+- 🦀️ Fix `Loading` not centered
+- 🦀️ Fix `DatePicker` wrong value in `onChange` 
+- 🦀️ Fix `NumberInput` inconsistent `onBlur` and `onChange` values
+- 🦀️ Fix `Upload` image order after uploading
+- 🦀️ Fix `Select` item order in tag mode
+- 🦀️ Fix can not edit hex in  `ColorPicker` 
+- 🦀️ Fix `textarea` height tingle
+- 🦀️ Fix some typo
+- 🦀️ Fix `yarn new-component` command
+
+### 3.11.0 (2017-12-20)
+
+- 🎉 New component `QuarterPicker`
+- ✨ `Select` can have a reset option
+- ✨ Support vertical scroll with fixed header in `Grid`
+- ✨ No more confirm in `DatePicker` when used without time selection
+- ✨ Support image drag-and-drag in `Upload`
+- ✨ Support autoresize for `textarea`
+- ✨ Support character count in `textarea`
+- ✨ Update pop position in `BlockHeader`
+- `Design`
+  - ✨ New image ad demo
+  - ✨ New richtext demo
+  - ✨ Allow custom content after preview section
+- ✨ Add `onPositionUpdated` to `Popover` and `Pop`
+- `Form`
+  - ✨ Change `required` rule，`null` is considered an error
+  - ✨ Add option to disable form submition triggered by pressing Enter in input
+  - 🦀️ Fix rerender when `validationOnChange` is `false`
+  - 🦀️ Support functional component in scroll to first error
+- `Swiper`
+  - 🦀️ Fix bug with only one image
+  - 🦀️ Fix animation when quickly click on prev/next button
+- 🦀️ Fix image not centered in `Loading`
+- 🦀️ Allow `scroll` function to run in `node.js`
+- 🦀️ Fix bug when using `batchcomponents` in `Form`
+- 📚 Fix `InfiniteScroller` documentation
+- 📚 Fix `Button` demo
+
+### 3.10.7 (2017-12-07)
+
+- ✨ Allow custom styles to be applied in `Menu`
+- 🦀️ Fix single file uploading in `Upload`
+
+### 3.10.6 (2017-12-06)
+
+- ✨ `Form` supports scroll to first error
+- 🦀️ `Upload` adds support for file filter
+
 ### 3.10.5 (2017-12-05)
 
 - 🦀️ Revert `Design`'s preview width to `320px`

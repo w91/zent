@@ -1,9 +1,12 @@
 import React, { Component, PureComponent } from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
+import Icon from 'icon';
+import isFunction from 'lodash/isFunction';
 import omit from 'lodash/omit';
 import isNumber from 'lodash/isNumber';
 import getWidth from 'utils/getWidth';
+import Textarea from './Textarea';
 
 export default class Input extends (PureComponent || Component) {
   static propTypes = {
@@ -18,6 +21,9 @@ export default class Input extends (PureComponent || Component) {
     addonBefore: PropTypes.node,
     addonAfter: PropTypes.node,
     onPressEnter: PropTypes.func,
+    showCount: PropTypes.bool,
+    showClear: PropTypes.bool,
+    autoSize: PropTypes.bool,
     onChange: PropTypes.func,
     autoFocus: PropTypes.bool,
     initSelectionStart: PropTypes.number,
@@ -32,7 +38,8 @@ export default class Input extends (PureComponent || Component) {
     prefix: 'zent',
     type: 'text',
     autoFocus: false,
-    autoSelect: false
+    autoSelect: false,
+    showClear: false
   };
 
   componentDidMount() {
@@ -72,6 +79,24 @@ export default class Input extends (PureComponent || Component) {
     if (onKeyDown) onKeyDown(evt);
   };
 
+  clearInput = evt => {
+    const { onChange } = this.props;
+
+    isFunction(onChange) &&
+      onChange({
+        target: {
+          ...this.props,
+          value: ''
+        },
+        preventDefault: () => evt.preventDefault(),
+        stopPropagation: () => evt.stopPropagation()
+      });
+  };
+
+  retainInputFocus = evt => {
+    evt.preventDefault();
+  };
+
   render() {
     const {
       addonBefore,
@@ -79,6 +104,9 @@ export default class Input extends (PureComponent || Component) {
       prefix,
       className,
       type,
+      onChange,
+      value,
+      showClear,
       width,
       disabled,
       readOnly
@@ -105,24 +133,22 @@ export default class Input extends (PureComponent || Component) {
       'addonAfter',
       'onPressEnter',
       'width',
+      'showClear',
       'autoSelect',
       'initSelectionStart',
       'initSelectionEnd'
     ]);
 
     if (isTextarea) {
-      inputProps = omit(inputProps, ['type']);
       return (
-        <div className={wrapClass} style={widthStyle}>
-          <textarea
-            ref={input => {
-              this.input = input;
-            }}
-            className={`${prefix}-textarea`}
-            {...inputProps}
-            onKeyDown={this.handleKeyDown}
-          />
-        </div>
+        <Textarea
+          wrapClass={wrapClass}
+          widthStyle={widthStyle}
+          prefix={prefix}
+          handleKeyDown={this.handleKeyDown}
+          inputProps={inputProps}
+          inputRef={this}
+        />
       );
     }
 
@@ -137,8 +163,18 @@ export default class Input extends (PureComponent || Component) {
           }}
           className={`${prefix}-input`}
           {...inputProps}
+          value={value}
           onKeyDown={this.handleKeyDown}
         />
+        {isFunction(onChange) &&
+          showClear &&
+          value && (
+            <Icon
+              type="close-circle"
+              onClick={this.clearInput}
+              onMouseDown={this.retainInputFocus}
+            />
+          )}
         {addonAfter && (
           <span className={`${prefix}-input-addon-after`}>{addonAfter}</span>
         )}

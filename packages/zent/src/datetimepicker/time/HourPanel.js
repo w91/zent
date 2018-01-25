@@ -3,7 +3,8 @@ import classNames from 'classnames';
 
 import PanelHeader from '../common/PanelHeader';
 import TimeCell from './TimeCell';
-import { CURRENT, padLeft } from '../utils';
+import { padLeft } from '../utils';
+import { CURRENT } from '../constants';
 
 const ROW = 4;
 const COL = 7;
@@ -46,13 +47,16 @@ export default class HourPanel extends (PureComponent || Component) {
     return cells;
   }
   render() {
-    const { hidePanel, onSelect } = this.props;
+    const { hidePanel, i18n, onSelect } = this.props;
     const hours = this.getHours();
-    const title = '选择小时';
 
     return (
       <div className="hour-panel">
-        <PanelHeader title={title} showNext={false} prev={hidePanel} />
+        <PanelHeader
+          title={i18n.panel.hourSelect}
+          showNext={false}
+          prev={hidePanel}
+        />
         <div className="hour-table panel-table">
           <TimeCell cells={hours} onSelect={onSelect} />
         </div>

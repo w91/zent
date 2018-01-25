@@ -19,6 +19,7 @@ import Grid from 'grid';
 import Icon from 'icon';
 import InfiniteScroller from 'infinite-scroller';
 import Input from 'input';
+import I18nProvider from 'i18n';
 import Layout from 'layout';
 import Loading from 'loading';
 import Menu from 'menu';
@@ -26,6 +27,7 @@ import MonthPicker from 'datetimepicker/MonthPicker';
 import Notify from 'notify';
 import NumberInput from 'number-input';
 import Pagination from 'pagination';
+import Placeholder from 'placeholder';
 import Pop from 'pop';
 import Popover from 'popover';
 import Portal from 'portal';
@@ -33,10 +35,11 @@ import previewImage from 'preview-image';
 import Progress from 'progress';
 import Radio from 'radio';
 import SearchInput from 'search-input';
-import SeasonPicker from 'datetimepicker/SeasonPicker';
+import QuarterPicker from 'datetimepicker/QuarterPicker';
 import Select from 'select';
 import SKU from 'sku';
 import Slider from 'slider';
+import Sortable from 'sortable';
 import Steps from 'steps';
 import Sweetalert from 'sweetalert';
 import Swiper from 'swiper';
@@ -71,6 +74,7 @@ export {
   Icon,
   InfiniteScroller,
   Input,
+  I18nProvider,
   Layout,
   Loading,
   Menu,
@@ -78,17 +82,19 @@ export {
   Notify,
   NumberInput,
   Pagination,
+  Placeholder,
   Pop,
   Popover,
   Portal,
   previewImage,
   Progress,
+  QuarterPicker,
   Radio,
   SearchInput,
-  SeasonPicker,
   Select,
   SKU,
   Slider,
+  Sortable,
   Steps,
   Sweetalert,
   Swiper,

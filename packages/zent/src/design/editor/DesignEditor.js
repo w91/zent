@@ -2,11 +2,13 @@ import React, { PureComponent, Component } from 'react';
 import PropTypes from 'prop-types';
 import cx from 'classnames';
 import assign from 'lodash/assign';
+import reorder from 'utils/reorder';
+import shallowEqual from 'utils/shallowEqual';
 
 const NOT_EVENT_MSG =
   'onInputChange expects an `Event` with { target: { name, value } } as argument';
 
-export class DesignEditor extends (PureComponent || Component) {
+export class DesignEditor extends Component {
   static propTypes = {
     value: PropTypes.object,
 
@@ -21,8 +23,14 @@ export class DesignEditor extends (PureComponent || Component) {
     // 用来和 Design 交互
     design: PropTypes.object.isRequired,
 
-    // 自定义配置
-    globalConfig: PropTypes.object
+    // 自定义全局配置，Design 不会改变这个对象的值
+    globalConfig: PropTypes.object,
+
+    // Design 全剧配置，和 globalConfig 的区别是 Design 组件可以 修改 settings 的值
+    settings: PropTypes.object,
+
+    // 修改 settings 的回调函数
+    onSettingsChange: PropTypes.func
   };
 
   // 以下属性需要子类重写
@@ -168,40 +176,14 @@ export class DesignEditor extends (PureComponent || Component) {
    * Scans the list only once.
   */
   reorder(array, fromIndex, toIndex) {
-    const lastIndex = array.length - 1;
-    const firstIndex = 0;
-    const result = new Array(array.length);
-    let tmp;
+    return reorder(array, fromIndex, toIndex);
+  }
 
-    if (fromIndex < toIndex) {
-      for (let i = firstIndex; i <= lastIndex; i++) {
-        if (i === fromIndex) {
-          tmp = array[i];
-        } else if (i > fromIndex && i < toIndex) {
-          result[i - 1] = array[i];
-        } else if (i === toIndex) {
-          result[i - 1] = array[i];
-          result[i] = tmp;
-        } else {
-          result[i] = array[i];
-        }
-      }
-    } else {
-      for (let i = lastIndex; i >= firstIndex; i--) {
-        if (i === fromIndex) {
-          tmp = array[i];
-        } else if (i < fromIndex && i > toIndex) {
-          result[i + 1] = array[i];
-        } else if (i === toIndex) {
-          result[i] = tmp;
-          result[i + 1] = array[i];
-        } else {
-          result[i] = array[i];
-        }
-      }
-    }
-
-    return result;
+  shouldComponentUpdate(nextProps, nextState) {
+    return (
+      !shallowEqual(this.props, nextProps) ||
+      !shallowEqual(this.state, nextState)
+    );
   }
 }
 
